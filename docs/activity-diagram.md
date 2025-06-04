@@ -3,71 +3,60 @@ flowchart TD
     Start([User Opens App]) --> Auth{Authenticated?}
     
     Auth -->|No| Login[Login with Google]
-    Auth -->|Yes| Dashboard[View Dashboard]
+    Auth -->|Yes| Dashboard[View Dashboard<br/>Balance Summary<br/>Credit Score<br/>Budget Progress]
     Login --> Dashboard
     
     Dashboard --> Action{Choose Action}
     
-    Action -->|Create Group| CreateGroup[Enter Group Name]
-    Action -->|Join Group| JoinGroup[Enter Invite Code]
-    Action -->|Add Expense| SelectGroup[Select Group]
-    Action -->|View Balances| ViewBalance[Display Balances]
-    Action -->|Settle Up| Settlement[Calculate Settlements]
+    Action -->|Manage Friends| Friends[Add Friends<br/>via Email/Username]
+    Action -->|Create Group| CreateGroup[Enter Group Details<br/>Add Members<br/>Set Budget]
+    Action -->|Add Expense| SelectGroup[Select Group<br/>& Participants]
+    Action -->|View Details| ViewBalance[Display Balances<br/>& Expense History]
+    Action -->|Settle Up| Settlement[Calculate Net<br/>Settlements]
     
-    CreateGroup --> GenerateCode[Generate Invite Code]
-    GenerateCode --> ShareCode[Share Code with Friends]
-    ShareCode --> GroupCreated[Group Created Successfully]
+    Friends --> FriendAdded[Friend Added<br/>Send Notification]
     
-    JoinGroup --> ValidateCode{Valid Code?}
-    ValidateCode -->|No| ErrorJoin[Show Error Message]
-    ValidateCode -->|Yes| AddMember[Add User to Group]
-    AddMember --> GroupJoined[Joined Successfully]
-    ErrorJoin --> Dashboard
+    CreateGroup --> GroupCreated[Group Created<br/>Notify Members]
     
-    SelectGroup --> ExpenseForm[Fill Expense Details]
+    SelectGroup --> ExpenseForm[Fill Expense Details<br/>Amount, Description, Date]
     ExpenseForm --> SplitType{Split Type?}
-    SplitType -->|Equal| EqualSplit[Divide Equally Among Members]
-    SplitType -->|Custom| CustomSplit[Enter Custom Amounts]
+    SplitType -->|Equal| EqualSplit[Divide Equally]
+    SplitType -->|Custom| CustomSplit[Enter Amounts]
     SplitType -->|Percentage| PercentSplit[Enter Percentages]
     
-    EqualSplit --> CreateSplits[Create ExpenseSplit Records]
-    CustomSplit --> ValidateAmounts{Amounts Match Total?}
-    PercentSplit --> ValidatePercent{Percentages = 100%?}
+    EqualSplit --> ProcessExpense[Create Expense<br/>Update Balances<br/>Check Budget<br/>Update Credit Score]
+    CustomSplit --> ValidateAmounts{Valid?}
+    PercentSplit --> ValidatePercent{Valid?}
     
     ValidateAmounts -->|No| CustomSplit
-    ValidateAmounts -->|Yes| CreateSplits
+    ValidateAmounts -->|Yes| ProcessExpense
     ValidatePercent -->|No| PercentSplit
-    ValidatePercent -->|Yes| CreateSplits
+    ValidatePercent -->|Yes| ProcessExpense
     
-    CreateSplits --> UpdateBalances[Update User Balances]
-    UpdateBalances --> NotifyMembers[Send Notifications]
-    NotifyMembers --> ExpenseAdded[Expense Added Successfully]
+    ProcessExpense --> NotifyMembers[Send Notifications<br/>Budget Alerts if needed]
+    NotifyMembers --> ExpenseAdded[Expense Added]
     
-    ViewBalance --> DisplayBalances[Show Individual Balances]
-    DisplayBalances --> BalanceDetails{View Details?}
-    BalanceDetails -->|Yes| ExpenseHistory[Show Expense History]
-    BalanceDetails -->|No| Dashboard
+    ViewBalance --> DisplayDetails[Show Balances<br/>Individual & Group<br/>Payment History]
     
-    Settlement --> CalculateOptimal[Calculate Optimal Settlements]
-    CalculateOptimal --> MinimizeTransactions[Minimize Number of Transactions]
-    MinimizeTransactions --> GenerateSettlements[Generate Settlement Records]
-    GenerateSettlements --> DisplaySettlements[Show Settlement Instructions]
-    DisplaySettlements --> MarkPaid{Mark as Paid?}
-    MarkPaid -->|Yes| UpdateSettlement[Update Settlement Status]
+    Settlement --> CalculateNet[Calculate Net Balances<br/>Minimize Transactions]
+    CalculateNet --> ShowSettlements[Display Settlement<br/>Instructions]
+    ShowSettlements --> MarkPaid{Mark as Paid?}
+    MarkPaid -->|Yes| UpdateBalances[Update Balances<br/>& Credit Scores<br/>Send Notifications]
     MarkPaid -->|No| Dashboard
-    UpdateSettlement --> RecalculateBalances[Recalculate Balances]
-    RecalculateBalances --> SettlementComplete[Settlement Complete]
+    UpdateBalances --> SettlementComplete[Settlement Complete]
     
+    FriendAdded --> Dashboard
     GroupCreated --> Dashboard
-    GroupJoined --> Dashboard
     ExpenseAdded --> Dashboard
-    ExpenseHistory --> Dashboard
+    DisplayDetails --> Dashboard
     SettlementComplete --> Dashboard
     
     style Start fill:#e8f5e9
     style Dashboard fill:#e3f2fd
+    style ProcessExpense fill:#fff3e0
+    style NotifyMembers fill:#fce4ec
+    style FriendAdded fill:#e8f5e9
     style GroupCreated fill:#e8f5e9
-    style GroupJoined fill:#e8f5e9
     style ExpenseAdded fill:#e8f5e9
     style SettlementComplete fill:#e8f5e9
 ```
