@@ -1,3 +1,4 @@
+```mermaid
 flowchart TB
     %% Styling
     classDef android fill:#e1f5fe,stroke:#039be5,color:#333
@@ -82,3 +83,5 @@ flowchart TB
     FASDK -.-> note1
     DB -.-> note2
     Settle -.-> note3
+
+```
