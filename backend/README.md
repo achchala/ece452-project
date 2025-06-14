@@ -55,7 +55,26 @@ pip install -r requirements.txt
 
 ## Environment Variables
 
-Create a `.env` file in the backend directory, there is an example .env file in google drive
+Create a `.env` file in the backend directory with the following structure:
+
+```env
+# Environment
+ENVIRONMENT=development
+
+# Django Settings
+SECRET_KEY=django-insecure-default-key-for-development
+ALLOWED_HOSTS=localhost,127.0.0.1
+DEBUG=True
+
+# Database Settings
+DB_NAME=your_database_name
+DB_USER=postgres
+DB_PASSWORD=your_postgres_password
+DB_HOST=localhost
+DB_PORT=5432
+```
+
+Note: Replace the placeholder values with your actual configuration.
 
 ## Running the Server
 
