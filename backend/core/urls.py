@@ -1,21 +1,17 @@
 """URL configuration for the Django project."""
-from django.urls import path
-from django.http import HttpResponse
-from django.db import connection
 
-def hello_world(request):
-    """Return a simple Hello, World! response."""
-    return HttpResponse("Hello, World!")
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from core.views.hello_world import HelloWorldView, DatabaseCheckView
+from core.views.friend_request import FriendRequestView
 
-def check_db(request):
-    """Check database connection and return status."""
-    try:
-        connection.ensure_connection()
-        return HttpResponse("Database connection successful!")
-    except Exception as e:
-        return HttpResponse(f"Database connection failed: {e}")
+# Create a router and register our viewsets with it
+router = DefaultRouter()
+router.register("friend", FriendRequestView, basename="friend")
 
+# The API URLs are now determined automatically by the router
 urlpatterns = [
-    path('', hello_world),
-    path('check-db', check_db),
-] 
+    path("", HelloWorldView.as_view(), name="hello_world"),
+    path("check-db", DatabaseCheckView.as_view(), name="check_db"),
+    path("api/", include(router.urls)),
+]

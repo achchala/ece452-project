@@ -2,9 +2,7 @@
 
 This is the Django backend for Evenly
 
-# Backend Setup
-
-## Environment Setup
+## Server Setup
 
 1. Create a virtual environment:
 
@@ -32,7 +30,9 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-## PostgreSQL Setup
+## Database Setup
+
+### PostgreSQL Setup
 
 1. Install PostgreSQL:
 
@@ -52,6 +52,21 @@ pip install -r requirements.txt
      - PostgreSQL service is running
      - Database credentials in `.env` match your setup
      - Port 5432 is not blocked by firewall
+
+### Initializing Database Models
+
+To initialize or reset the database models, use the provided scripts in the `scripts` directory:
+
+```bash
+# Reset database and run migrations
+python scripts/reset_and_migrate.py
+```
+
+This script will:
+
+1. Drop all existing tables in the database
+2. Clear the migrations history
+3. Apply all existing migrations to create fresh tables
 
 ## Environment Variables
 
@@ -78,15 +93,13 @@ Note: Replace the placeholder values with your actual configuration.
 
 ## Running the Server
 
-1. Start the development server:
+Start the development server:
 
 ```bash
-python manage.py runserver
+python main.py runserver
 ```
 
-2. Test the endpoints:
+Test Endpoints
 
-- Hello World: http://127.0.0.1:8000/
-- Database Check: http://127.0.0.1:8000/check-db
-
-The server will start at http://localhost:8000
+- Hello World: http://localhost:8000/
+- Database Check: http://localhost:8000/check-db
