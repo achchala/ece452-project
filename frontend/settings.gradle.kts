@@ -19,5 +19,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "HelloWorld"
+rootProject.name = "evenly"
+rootProject.buildFileName = "build.gradle.kts"
 include(":app")
