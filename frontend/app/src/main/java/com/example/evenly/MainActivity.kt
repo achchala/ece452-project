@@ -1,4 +1,4 @@
-package com.example.helloworld
+package com.example.evenly
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -13,7 +13,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.helloworld.ui.theme.HelloWorldTheme
+import com.example.evenly.ui.theme.HelloWorldTheme
+
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
