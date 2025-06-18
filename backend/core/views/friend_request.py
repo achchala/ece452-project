@@ -13,7 +13,6 @@ class FriendRequestView(viewsets.ViewSet):
     def get_all_requests(self, request):
         """Get all friend requests for a user."""
         username = request.query_params.get("username")
-        print(username)
         if not username:
             print("hello")
             return Response(

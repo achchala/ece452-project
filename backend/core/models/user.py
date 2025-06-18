@@ -6,15 +6,13 @@ from django.utils import timezone
 
 class User(models.Model):
     """User model for storing user information."""
-
-    username = models.CharField(max_length=150, unique=True)
+    id = models.AutoField(primary_key=True)
     email = models.EmailField(unique=True)
     date_joined = models.DateTimeField(default=timezone.now)
-    is_active = models.BooleanField(default=True)
+    firebase_id = models.CharField(max_length=255, unique=True)
 
     class Meta:
         db_table = "users"
-        ordering = ["-date_joined"]
 
     def __str__(self):
-        return self.username
+        return self.usernames

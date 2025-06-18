@@ -78,7 +78,7 @@ ENVIRONMENT=development
 
 # Django Settings
 SECRET_KEY=django-insecure-default-key-for-development
-ALLOWED_HOSTS=localhost,127.0.0.1
+ALLOWED_HOSTS=localhost,127.0.0.1,10.0.2.2
 DEBUG=True
 
 # Database Settings
