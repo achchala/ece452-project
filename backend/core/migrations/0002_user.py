@@ -23,12 +23,9 @@ class Migration(migrations.Migration):
                         verbose_name="ID",
                     ),
                 ),
-                ("username", models.CharField(max_length=150, unique=True)),
                 ("email", models.EmailField(max_length=254, unique=True)),
-                ("password", models.CharField(max_length=128)),
                 ("date_joined", models.DateTimeField(auto_now_add=True)),
-                ("last_login", models.DateTimeField(blank=True, null=True)),
-                ("is_active", models.BooleanField(default=True)),
+                ("firebase_id", models.CharField(max_length=255, unique=True)),
             ],
             options={
                 "db_table": "users",

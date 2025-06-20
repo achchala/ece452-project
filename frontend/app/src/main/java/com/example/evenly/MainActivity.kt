@@ -1,5 +1,6 @@
 package com.example.evenly
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -13,8 +14,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.lifecycleScope
+import com.example.evenly.api.ApiRepository
 import com.example.evenly.ui.theme.HelloWorldTheme
-
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -22,9 +25,17 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             HelloWorldTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    NameListScreen(modifier = Modifier.padding(innerPadding))
-                }
+                MainScreen(
+                    onLogout = {
+                        lifecycleScope.launch {
+//                            ApiRepository.auth.logout()
+                            val intent = Intent(this@MainActivity, Login::class.java)
+                            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                            startActivity(intent)
+                            finish()
+                        }
+                    }
+                )
             }
         }
     }
@@ -32,7 +43,31 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NameListScreen(modifier: Modifier = Modifier) {
+fun MainScreen(
+    onLogout: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Scaffold(
+        modifier = modifier.fillMaxSize(),
+        topBar = {
+            TopAppBar(
+                title = { Text("Evenly") }
+            )
+        }
+    ) { innerPadding ->
+        NameListScreen(
+            onLogout = onLogout,
+            modifier = Modifier.padding(innerPadding)
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun NameListScreen(
+    onLogout: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     var nameText by remember { mutableStateOf("") }
     var names by remember { mutableStateOf(listOf<String>()) }
 
@@ -71,6 +106,15 @@ fun NameListScreen(modifier: Modifier = Modifier) {
                 Spacer(modifier = Modifier.height(8.dp))
             }
         }
+        
+        Spacer(modifier = Modifier.weight(1f))
+        
+        Button(
+            onClick = onLogout,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Logout")
+        }
     }
 }
 
@@ -90,6 +134,6 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
 @Composable
 fun NameListScreenPreview() {
     HelloWorldTheme {
-        NameListScreen()
+        NameListScreen(onLogout = {})
     }
 }
