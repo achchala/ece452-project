@@ -45,12 +45,14 @@ This backend connects directly to Supabase using psycopg2. All data is managed v
 
 - In the `backend` directory, create a `.env` file with the Supabase connection details:
   ```env
-  ENVIRONMENT=development
-  DB_NAME=postgres
-  DB_USER=postgres
-  DB_PASSWORD=your_supabase_db_password
-  DB_HOST=db.xxxxxxxxxxxxx.supabase.co
-  DB_PORT=5432
+   DB_NAME=postgres
+   DB_USER=postgres
+   DB_PASSWORD=your_supabase_db_password
+   DB_HOST=db.xxxxxxxxxxxxx.supabase.co
+   DB_PORT=5432
+   DB_KEY=KEY
+   DB_SERVICE_ROLE_KEY=KEY
+   DB_URL=URL
   ```
 - The `ENVIRONMENT` variable controls table prefixing (e.g., `development_users`)
 
@@ -122,6 +124,9 @@ DB_USER=postgres
 DB_PASSWORD=your_supabase_db_password
 DB_HOST=db.xxxxxxxxxxxxx.supabase.co
 DB_PORT=5432
+DB_KEY=KEY
+DB_SERVICE_ROLE_KEY=KEY
+DB_URL=URL
 ```
 
 Note: Replace the placeholder values with your actual configuration.

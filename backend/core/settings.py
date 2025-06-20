@@ -78,12 +78,12 @@ SUPABASE_URL = os.getenv("DB_URL")
 SUPABASE_ANON_KEY = os.getenv("DB_KEY")
 SUPABASE_SERVICE_ROLE_KEY = os.getenv("DB_SERVICE_ROLE_KEY")    
 
-# Database - Using Supabase REST API instead of direct PostgreSQL
-# Note: Django ORM will be replaced with HTTP requests to Supabase
+# Database - Using Supabase for all data operations
+# Django ORM is not used for application data
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",  # Fallback for Django's internal operations
-        "NAME": BASE_DIR / "db.sqlite3",
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": ":memory:",  # Use in-memory database for Django's internal operations
     }
 }
 

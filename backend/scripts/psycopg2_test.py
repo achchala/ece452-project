@@ -1,31 +1,30 @@
-import psycopg2
 import os
 from dotenv import load_dotenv
+from supabase import create_client
 
 load_dotenv()
 
-conn = None
 try:
-    conn = psycopg2.connect(
-        dbname=os.getenv("DB_NAME"),
-        user=os.getenv("DB_USER"),
-        password=os.getenv("DB_PASSWORD"),
-        host=os.getenv("DB_HOST"),
-        port=os.getenv("DB_PORT"),
-    )
+    # Get Supabase configuration using DB_URL and DB_KEY
+    supabase_url = os.getenv("DB_URL")
+    supabase_key = os.getenv("DB_KEY")
+    
+    if not supabase_url or not supabase_key:
+        print("❌ DB_URL and DB_KEY must be set in environment variables")
+        exit(1)
+    
+    # Create Supabase client
+    supabase = create_client(supabase_url, supabase_key)
+    
+    # Test connection by trying a simple query
+    result = supabase.table("development_users").select("id").limit(1).execute()
+    
     print("✅ Connection successful!")
-
-    with conn.cursor() as cur:
-        cur.execute("SELECT version();")
-        print("PostgreSQL version:", cur.fetchone())
-
-        # Example: create a table
-        cur.execute("CREATE TABLE IF NOT EXISTS test_table (id serial PRIMARY KEY, name text);")
-        conn.commit()
-        print("Table created (if not exists).")
-
+    print("Supabase client connected successfully")
+    print("Test query executed successfully")
+    
+    # Test table creation (if needed)
+    # This would be handled by the create_tables.py script
+    
 except Exception as e:
-    print("❌ Connection failed:", e)
-finally:
-    if conn:
-        conn.close() 
+    print("❌ Connection failed:", e) 

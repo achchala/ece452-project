@@ -24,34 +24,22 @@ class SupabaseClient:
     
     def __init__(self):
         if not self._initialized:
-            # Load environment variables
-            load_dotenv()
-            
-            # Database connection parameters from .env
-            db_params = {
-                "dbname": os.getenv("DB_NAME"),
-                "user": os.getenv("DB_USER"),
-                "password": os.getenv("DB_PASSWORD"),
-                "host": os.getenv("DB_HOST"),
-                "port": os.getenv("DB_PORT")
-            }
-            
-            # Initialize base client
-            self.base_client = BaseSupabaseClient(**db_params)
+            # Initialize base client (no parameters needed now)
+            self.base_client = BaseSupabaseClient()
             
             # Initialize operation modules
             self.users = UserOperations(self.base_client)
             self.friend_requests = FriendRequestOperations(self.base_client)
             
             self._initialized = True
-            logger.info("SupabaseClient initialized with direct DB connection.")
+            logger.info("SupabaseClient initialized with Supabase Python client.")
     
     def test_connection(self) -> bool:
         """Test connection to Supabase."""
         return self.base_client.test_connection()
     
     def close_connection(self):
-        """Close the connection pools."""
+        """Close the connection."""
         self.base_client.close_connection()
 
 # Global instance
