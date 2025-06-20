@@ -2,18 +2,30 @@ package com.example.evenly
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.credentials.Credential
+import androidx.credentials.CredentialManager
+import androidx.credentials.CustomCredential
+import androidx.credentials.GetCredentialRequest
+import androidx.lifecycle.lifecycleScope
 import com.example.evenly.databinding.ActivityLoginBinding
+import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingException
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.GoogleAuthProvider
+import kotlinx.coroutines.launch
 
 class Login : AppCompatActivity() {
 
     private lateinit var binding: ActivityLoginBinding
     private lateinit var firebaseAuth: FirebaseAuth
+    private lateinit var credentialManager: CredentialManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -27,6 +39,8 @@ class Login : AppCompatActivity() {
         }
 
         firebaseAuth = FirebaseAuth.getInstance()
+        credentialManager = CredentialManager.create(baseContext)
+
         binding.createAccount.setOnClickListener{
             val intent = Intent(this, Register::class.java)
             startActivity(intent)
@@ -49,5 +63,81 @@ class Login : AppCompatActivity() {
                 Toast.makeText(this, "Empty fields are not allowed.", Toast.LENGTH_SHORT).show()
             }
         }
+        binding.btnGoogleSignin.setOnClickListener {
+            val signInWithGoogleOption = GetSignInWithGoogleOption
+                .Builder(getString(R.string.client_id))
+                .build()
+
+            val request = GetCredentialRequest.Builder()
+                .addCredentialOption(signInWithGoogleOption)
+                .build()
+
+            lifecycleScope.launch {
+                try {
+                    val result = credentialManager.getCredential(
+                        request = request,
+                        context = baseContext
+                    )
+                    handleSignIn(result.credential)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Google sign-in failed", e)
+                    Toast.makeText(this@Login, "Google sign-in failed: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+    }
+
+    override fun onStart() {
+        super.onStart()
+
+    }
+    private fun handleSignIn(result: Credential) {
+        // Handle the successfully returned credential.
+        when (result) {
+            is CustomCredential -> {
+                if (result.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
+                    try {
+                        // Use googleIdTokenCredential and extract id to validate and
+                        // authenticate on your server.
+                        val googleIdTokenCredential = GoogleIdTokenCredential
+                            .createFrom(result.data)
+
+                        firebaseAuthWithGoogle(googleIdTokenCredential.idToken)
+                    } catch (e: GoogleIdTokenParsingException) {
+                        Log.e(TAG, "Received an invalid google id token response", e)
+                    }
+                }
+                else {
+                    // Catch any unrecognized credential type here.
+                    Log.e(TAG, "Unexpected type of credential")
+                }
+            }
+
+            else -> {
+                // Catch any unrecognized credential type here.
+                Log.e(TAG, "Unexpected type of credential")
+            }
+        }
+    }
+
+    private fun firebaseAuthWithGoogle(idToken: String) {
+        val credential = GoogleAuthProvider.getCredential(idToken, null)
+        firebaseAuth.signInWithCredential(credential)
+            .addOnCompleteListener(this) { task ->
+                if (task.isSuccessful) {
+                    // Sign in success, update UI with the signed-in user's information
+                    Log.d(TAG, "signInWithCredential:success")
+                    val user = firebaseAuth.currentUser
+                    val intent = Intent(this, MainActivity::class.java)
+                    startActivity(intent)
+                } else {
+                    // If sign in fails, display a message to the user
+                    Log.w(TAG, "signInWithCredential:failure", task.exception)
+                }
+            }
+    }
+
+    companion object {
+        private const val TAG = "GoogleActivity"
     }
 }
