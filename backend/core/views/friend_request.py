@@ -3,26 +3,27 @@
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from core.models.friend import FriendRequest
+from core.supabase import supabase
 
 
 class FriendRequestView(viewsets.ViewSet):
-    """ViewSet for friend requests."""
+    """ViewSet for friend requests, using Supabase."""
 
     @action(detail=False, methods=["get"], url_path="get-all-requests")
     def get_all_requests(self, request):
-        """Get all friend requests for a user."""
-        username = request.query_params.get("username")
-        if not username:
-            print("hello")
+        """Get all incoming, pending friend requests for a user."""
+        to_user = request.query_params.get("username")
+        if not to_user:
             return Response(
-                {"error": "Username required"}, status=status.HTTP_400_BAD_REQUEST
+                {"error": "Username is required"}, status=status.HTTP_400_BAD_REQUEST
             )
 
-        requests = FriendRequest.objects.filter(
-            to_user=username, request_completed=False
-        )
-        return Response({"requests": list(requests.values("from_user", "created_at"))})
+        requests = supabase.friend_requests.get_incoming(to_user)
+        
+        if requests is None:
+            return Response({"error": "Failed to retrieve requests"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+        return Response({"requests": requests})
 
     @action(detail=False, methods=["post"], url_path="add-friend")
     def add_friend(self, request):
@@ -32,31 +33,43 @@ class FriendRequestView(viewsets.ViewSet):
 
         if not all([from_user, to_user]):
             return Response(
-                {"error": "Missing user information"},
+                {"error": "Both from_user and to_user are required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+            
+        if from_user == to_user:
+            return Response(
+                {"error": "Cannot send a friend request to yourself"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        FriendRequest.objects.get_or_create(
-            from_user=from_user, to_user=to_user, defaults={"request_completed": False}
-        )
-        return Response({"status": "request sent"})
+        new_request = supabase.friend_requests.create(from_user=from_user, to_user=to_user)
+        
+        if new_request:
+            return Response({"status": "request sent", "data": new_request}, status=status.HTTP_201_CREATED)
+        else:
+            # This could be due to a duplicate request or a database error.
+            return Response({"error": "Failed to send request, it may already exist"}, status=status.HTTP_409_CONFLICT)
 
     @action(detail=False, methods=["post"], url_path="accept-friend")
     def accept_friend(self, request):
         """Accept a friend request."""
         from_user = request.data.get("from_user")
         to_user = request.data.get("to_user")
-
-        try:
-            friend_request = FriendRequest.objects.get(
-                from_user=from_user, to_user=to_user, request_completed=False
-            )
-            friend_request.request_completed = True
-            friend_request.save()
-            return Response({"status": "accepted"})
-        except FriendRequest.DoesNotExist:
+        
+        if not all([from_user, to_user]):
             return Response(
-                {"error": "Request not found"}, status=status.HTTP_404_NOT_FOUND
+                {"error": "Both from_user and to_user are required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        success = supabase.friend_requests.accept(from_user=from_user, to_user=to_user)
+        
+        if success:
+            return Response({"status": "accepted"})
+        else:
+            return Response(
+                {"error": "Request not found or already accepted"}, status=status.HTTP_404_NOT_FOUND
             )
 
     @action(detail=False, methods=["post"], url_path="reject-friend")
@@ -64,14 +77,18 @@ class FriendRequestView(viewsets.ViewSet):
         """Reject a friend request."""
         from_user = request.data.get("from_user")
         to_user = request.data.get("to_user")
-
-        try:
-            friend_request = FriendRequest.objects.get(
-                from_user=from_user, to_user=to_user, request_completed=False
+        
+        if not all([from_user, to_user]):
+            return Response(
+                {"error": "Both from_user and to_user are required"},
+                status=status.HTTP_400_BAD_REQUEST,
             )
-            friend_request.delete()
+
+        success = supabase.friend_requests.reject(from_user=from_user, to_user=to_user)
+        
+        if success:
             return Response({"status": "rejected"})
-        except FriendRequest.DoesNotExist:
+        else:
             return Response(
                 {"error": "Request not found"}, status=status.HTTP_404_NOT_FOUND
             )

@@ -43,10 +43,12 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "rest_framework",
     "rest_framework.authtoken",
+    "corsheaders",
     "core",
 ]
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
 ]
 
@@ -71,17 +73,30 @@ TEMPLATES = [
 WSGI_APPLICATION = "core.wsgi.application"
 
 
-# Database
-# https://docs.djangoproject.com/en/5.0/ref/settings/#databases
+# Supabase Configuration (HTTP/REST API)
+SUPABASE_URL = os.getenv("DB_URL")
+SUPABASE_ANON_KEY = os.getenv("DB_KEY")
+SUPABASE_SERVICE_ROLE_KEY = os.getenv("DB_SERVICE_ROLE_KEY")    
 
+# Database - Using Supabase REST API instead of direct PostgreSQL
+# Note: Django ORM will be replaced with HTTP requests to Supabase
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("DB_NAME"),
-        "USER": os.getenv("DB_USER"),
-        "PASSWORD": os.getenv("DB_PASSWORD"),
-        "HOST": os.getenv("DB_HOST"),
-        "PORT": os.getenv("DB_PORT"),
+        "ENGINE": "django.db.backends.sqlite3",  # Fallback for Django's internal operations
+        "NAME": BASE_DIR / "db.sqlite3",
+    }
+}
+
+# Supabase HTTP API Configuration
+SUPABASE_CONFIG = {
+    "url": SUPABASE_URL,
+    "anon_key": SUPABASE_ANON_KEY,
+    "service_role_key": SUPABASE_SERVICE_ROLE_KEY,
+    "headers": {
+        "apikey": SUPABASE_ANON_KEY,
+        "Authorization": f"Bearer {SUPABASE_ANON_KEY}",
+        "Content-Type": "application/json",
+        "Prefer": "return=representation"
     }
 }
 
@@ -100,8 +115,14 @@ USE_TZ = True
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 
-# CORS settings
-CORS_ALLOW_ALL_ORIGINS = True
+# CORS settings for Supabase
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    SUPABASE_URL,
+]
+
+CORS_ALLOW_CREDENTIALS = True
 
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = "static/"
