@@ -46,11 +46,8 @@ This backend connects directly to Supabase using psycopg2. All data is managed v
 - In the `backend` directory, create a `.env` file with the Supabase connection details:
   ```env
   ENVIRONMENT=development
-  DB_NAME=postgres
-  DB_USER=postgres
-  DB_PASSWORD=your_supabase_db_password
-  DB_HOST=db.xxxxxxxxxxxxx.supabase.co
-  DB_PORT=5432
+  DB_URL=https://your-project-ref.supabase.co
+  DB_KEY=your_supabase_anon_key
   ```
 - The `ENVIRONMENT` variable controls table prefixing (e.g., `development_users`)
 
@@ -116,15 +113,12 @@ SECRET_KEY=django-insecure-default-key-for-development
 ALLOWED_HOSTS=localhost,127.0.0.1,10.0.2.2
 DEBUG=True
 
-# Database Settings
-DB_NAME=postgres
-DB_USER=postgres
-DB_PASSWORD=your_supabase_db_password
-DB_HOST=db.xxxxxxxxxxxxx.supabase.co
-DB_PORT=5432
+# Supabase Settings
+DB_URL=https://your-project-ref.supabase.co
+DB_KEY=your_supabase_anon_key
 ```
 
-Note: Replace the placeholder values with your actual configuration.
+Note: Replace the placeholder values with your actual Supabase configuration.
 
 ## Running the Server
 

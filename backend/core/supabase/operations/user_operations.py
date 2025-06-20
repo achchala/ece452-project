@@ -3,7 +3,7 @@ from ..base_client import BaseSupabaseClient
 
 
 class UserOperations:
-    """Handles all user-related database operations via psycopg2."""
+    """Handles all user-related database operations using the Supabase client."""
     
     def __init__(self, base_client: BaseSupabaseClient):
         self.client = base_client
@@ -11,46 +11,64 @@ class UserOperations:
     
     def get_by_email(self, email: str) -> Optional[Dict]:
         """Get user by email."""
-        query = f"SELECT * FROM {self.table_name} WHERE email = %s;"
-        return self.client._execute(query, (email,), fetch='one')
+        result = self.client._execute_query(
+            table_name=self.table_name,
+            operation='select',
+            filters={'email': email}
+        )
+        return result[0] if result else None
     
     def get_by_firebase_id(self, firebase_id: str) -> Optional[Dict]:
         """Get user by Firebase ID."""
-        query = f"SELECT * FROM {self.table_name} WHERE firebase_id = %s;"
-        return self.client._execute(query, (firebase_id,), fetch='one')
+        result = self.client._execute_query(
+            table_name=self.table_name,
+            operation='select',
+            filters={'firebase_id': firebase_id}
+        )
+        return result[0] if result else None
     
     def get_by_id(self, user_id: int) -> Optional[Dict]:
         """Get user by ID."""
-        query = f"SELECT * FROM {self.table_name} WHERE id = %s;"
-        return self.client._execute(query, (user_id,), fetch='one')
+        result = self.client._execute_query(
+            table_name=self.table_name,
+            operation='select',
+            filters={'id': user_id}
+        )
+        return result[0] if result else None
     
     def create(self, email: str, firebase_id: str) -> Optional[Dict]:
         """Create a new user and return the created record."""
-        query = f"""
-            INSERT INTO {self.table_name} (email, firebase_id) 
-            VALUES (%s, %s) 
-            RETURNING *;
-        """
-        return self.client._execute(query, (email, firebase_id), fetch='one')
+        data = {
+            "email": email,
+            "firebase_id": firebase_id
+        }
+        return self.client._execute_query(
+            table_name=self.table_name,
+            operation='insert',
+            data=data
+        )
     
     def update(self, user_id: int, data: Dict[str, Any]) -> Optional[Dict]:
         """Update user data and return the updated record."""
-        set_clause = ", ".join([f"{key} = %s" for key in data.keys()])
-        query = f"UPDATE {self.table_name} SET {set_clause} WHERE id = %s RETURNING *;"
-        params = list(data.values()) + [user_id]
-        return self.client._execute(query, tuple(params), fetch='one')
+        return self.client._execute_query(
+            table_name=self.table_name,
+            operation='update',
+            data=data,
+            filters={'id': user_id}
+        )
     
     def delete(self, user_id: int) -> bool:
         """Delete a user. Returns True if a row was deleted."""
-        query = f"DELETE FROM {self.table_name} WHERE id = %s;"
-        rowcount = self.client._execute(query, (user_id,))
-        return rowcount > 0
+        return self.client._execute_query(
+            table_name=self.table_name,
+            operation='delete',
+            filters={'id': user_id}
+        )
     
     def list_all(self, limit: Optional[int] = None) -> Optional[List[Dict]]:
         """List all users."""
-        query = f"SELECT * FROM {self.table_name}"
-        params = None
-        if limit:
-            query += " LIMIT %s"
-            params = (limit,)
-        return self.client._execute(query, params, fetch='all') 
+        return self.client._execute_query(
+            table_name=self.table_name,
+            operation='select',
+            limit=limit
+        ) 

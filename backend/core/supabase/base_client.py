@@ -1,100 +1,111 @@
-import psycopg2
-from psycopg2 import pool
-from psycopg2.extras import RealDictCursor
 import os
 import logging
 from typing import List, Optional, Dict, Any, Tuple
+from supabase import create_client, Client
+from dotenv import load_dotenv
 
 logger = logging.getLogger(__name__)
 
 class BaseSupabaseClient:
     """
-    Base client for managing a direct PostgreSQL connection pool to Supabase.
+    Base client for managing Supabase connection using the official Python client.
     """
-    def __init__(self, dbname: str, user: str, password, host: str, port: str, min_conn: int = 1, max_conn: int = 10):
+    def __init__(self):
+        # Load environment variables
+        load_dotenv()
+        
         # Environment configuration
         self.environment = os.getenv("ENVIRONMENT", "development")
         self.table_prefix = f"{self.environment}_" if self.environment != "production" else ""
         
-        try:
-            self.pool = pool.SimpleConnectionPool(
-                min_conn,
-                max_conn,
-                dbname=dbname,
-                user=user,
-                password=password,
-                host=host,
-                port=port,
-                sslmode="require"
-            )
-            logger.info(f"Supabase connection pool created for env: '{self.environment}'")
-            logger.info(f"Table prefix: '{self.table_prefix}'")
-        except psycopg2.OperationalError as e:
-            logger.error(f"Failed to create connection pool: {e}")
-            self.pool = None
+        # Supabase configuration using DB_URL and DB_KEY
+        supabase_url = os.getenv("DB_URL")
+        supabase_key = os.getenv("DB_KEY")
+        
+        if not supabase_url or not supabase_key:
+            logger.error("DB_URL and DB_KEY must be set in environment variables")
+            self.client = None
+        else:
+            try:
+                self.client = create_client(supabase_url, supabase_key)
+                logger.info(f"Supabase client created for env: '{self.environment}'")
+                logger.info(f"Table prefix: '{self.table_prefix}'")
+            except Exception as e:
+                logger.error(f"Failed to create Supabase client: {e}")
+                self.client = None
 
     def get_table_name(self, base_table_name: str) -> str:
         """Get the environment-specific table name with prefix."""
         return f"{self.table_prefix}{base_table_name}"
     
-    def _execute(self, query: str, params: Optional[Tuple] = None, fetch: Optional[str] = None) -> Any:
+    def _execute_query(self, table_name: str, operation: str, data: Optional[Dict] = None, filters: Optional[Dict] = None, limit: Optional[int] = None) -> Any:
         """
-        Execute a SQL query using a connection from the pool.
+        Execute a query using the Supabase client.
         
-        :param query: The SQL query to execute.
-        :param params: The parameters to pass to the query.
-        :param fetch: Type of fetch ('one', 'all'). If None, commits the transaction.
-        :return: Fetched data or row count.
+        :param table_name: The table to query
+        :param operation: The operation to perform ('select', 'insert', 'update', 'delete')
+        :param data: Data for insert/update operations
+        :param filters: Filters for select/update/delete operations
+        :param limit: Limit for select operations
+        :return: Query result
         """
-        if not self.pool:
-            logger.error("Connection pool is not available.")
+        if not self.client:
+            logger.error("Supabase client is not available.")
             return None
             
-        conn = None
         try:
-            conn = self.pool.getconn()
-            # Use RealDictCursor to get results as dictionaries
-            with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                cur.execute(query, params)
+            table = self.client.table(table_name)
+            
+            if operation == 'select':
+                query = table.select("*")
+                if filters:
+                    for key, value in filters.items():
+                        query = query.eq(key, value)
+                if limit:
+                    query = query.limit(limit)
+                result = query.execute()
+                return result.data
                 
-                if fetch == 'one':
-                    result = cur.fetchone()
-                    # Commit the transaction for INSERT/UPDATE/DELETE operations
-                    conn.commit()
-                    return result
-                elif fetch == 'all':
-                    result = cur.fetchall()
-                    # Commit the transaction for INSERT/UPDATE/DELETE operations
-                    conn.commit()
-                    return result
-                else:
-                    # For INSERT, UPDATE, DELETE, we commit and can return rowcount
-                    conn.commit()
-                    return cur.rowcount
+            elif operation == 'insert':
+                result = table.insert(data).execute()
+                return result.data[0] if result.data else None
+                
+            elif operation == 'update':
+                query = table.update(data)
+                if filters:
+                    for key, value in filters.items():
+                        query = query.eq(key, value)
+                result = query.execute()
+                return result.data[0] if result.data else None
+                
+            elif operation == 'delete':
+                query = table.delete()
+                if filters:
+                    for key, value in filters.items():
+                        query = query.eq(key, value)
+                result = query.execute()
+                return len(result.data) > 0
+                
         except Exception as e:
             logger.error(f"Database query failed: {e}")
-            if conn:
-                conn.rollback()
             return None
-        finally:
-            if conn:
-                self.pool.putconn(conn)
 
     def test_connection(self) -> bool:
         """Test the database connection."""
-        if not self.pool:
+        if not self.client:
             return False
             
-        res = self._execute("SELECT 1 AS result;", fetch='one')
-        if res and res['result'] == 1:
-            logger.info("✅ Supabase direct connection successful!")
+        try:
+            # Try a simple query
+            result = self.client.table(self.get_table_name("users")).select("id").limit(1).execute()
+            logger.info("✅ Supabase connection successful!")
             return True
-        else:
-            logger.error("❌ Supabase direct connection failed.")
+        except Exception as e:
+            logger.error(f"❌ Supabase connection failed: {e}")
             return False
 
     def close_connection(self):
-        """Close all connections in the pool."""
-        if self.pool:
-            self.pool.closeall()
-            logger.info("Supabase connection pool closed.") 
+        """Close the Supabase client connection."""
+        if self.client:
+            # The Supabase client handles connection management automatically
+            logger.info("Supabase client connection closed.") 
