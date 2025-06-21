@@ -1,6 +1,5 @@
 package com.example.evenly.api.auth.models
 
-data class RegisterResponse(
-    val message: String,
+data class GetUserResponse(
     val user: User
-)
+) 

@@ -17,15 +17,21 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
 import com.example.evenly.api.ApiRepository
 import com.example.evenly.ui.theme.HelloWorldTheme
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        
+        // Get the user name from intent if passed from NameCollection
+        val userName = intent.getStringExtra("user_name")
+        
         setContent {
             HelloWorldTheme {
                 MainScreen(
+                    initialUserName = userName,
                     onLogout = {
                         lifecycleScope.launch {
 //                            ApiRepository.auth.logout()
@@ -44,9 +50,41 @@ class MainActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
+    initialUserName: String?,
     onLogout: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var userName by remember { mutableStateOf<String?>(initialUserName) }
+    var isLoading by remember { mutableStateOf(initialUserName == null) }
+    
+    // Fetch user name from API only if not provided via intent
+    LaunchedEffect(initialUserName) {
+        if (initialUserName == null) {
+            val currentUser = FirebaseAuth.getInstance().currentUser
+            if (currentUser != null) {
+                try {
+                    val result = ApiRepository.auth.getUser(currentUser.uid)
+                    result.fold(
+                        onSuccess = { response ->
+                            userName = response.user.name ?: "User"
+                            isLoading = false
+                        },
+                        onFailure = { exception ->
+                            userName = "User"
+                            isLoading = false
+                        }
+                    )
+                } catch (e: Exception) {
+                    userName = "User"
+                    isLoading = false
+                }
+            } else {
+                userName = "User"
+                isLoading = false
+            }
+        }
+    }
+    
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
@@ -56,6 +94,8 @@ fun MainScreen(
         }
     ) { innerPadding ->
         NameListScreen(
+            userName = userName,
+            isLoading = isLoading,
             onLogout = onLogout,
             modifier = Modifier.padding(innerPadding)
         )
@@ -65,6 +105,8 @@ fun MainScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NameListScreen(
+    userName: String? = null,
+    isLoading: Boolean = false,
     onLogout: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -77,6 +119,21 @@ fun NameListScreen(
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        // Personalized header
+        if (isLoading) {
+            Text(
+                text = "Loading...",
+                style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.padding(bottom = 24.dp)
+            )
+        } else if (userName != null) {
+            Text(
+                text = "Hi $userName! Ready to split evenly?",
+                style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.padding(bottom = 24.dp)
+            )
+        }
+        
         TextField(
             value = nameText,
             onValueChange = { nameText = it },

@@ -13,6 +13,7 @@ import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
 import androidx.lifecycle.lifecycleScope
+import com.example.evenly.api.ApiRepository
 import com.example.evenly.databinding.ActivityLoginBinding
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
@@ -53,8 +54,36 @@ class Login : AppCompatActivity() {
             if (email.isNotEmpty() && password.isNotEmpty()) {
                 firebaseAuth.signInWithEmailAndPassword(email, password).addOnCompleteListener{
                     if (it.isSuccessful) {
-                        val intent = Intent(this, MainActivity::class.java)
-                        startActivity(intent)
+                        lifecycleScope.launch {
+                            val currentUser = it.result!!.user!!
+                            try {
+                                val result = ApiRepository.auth.getUser(currentUser.uid)
+                                result.fold(
+                                    onSuccess = { response ->
+                                        if (response.user.name.isNullOrBlank()) {
+                                            // User doesn't have a name set, go to NameCollection
+                                            val intent = Intent(this@Login, NameCollection::class.java)
+                                            startActivity(intent)
+                                        } else {
+                                            // User has a name, go to MainActivity
+                                            val intent = Intent(this@Login, MainActivity::class.java)
+                                            startActivity(intent)
+                                        }
+                                    },
+                                    onFailure = { exception ->
+                                        Log.e("Login", "Failed to get user info", exception)
+                                        // If we can't get user info, assume they need to set their name
+                                        val intent = Intent(this@Login, NameCollection::class.java)
+                                        startActivity(intent)
+                                    }
+                                )
+                            } catch (e: Exception) {
+                                Log.e("Login", "Exception during user info fetch", e)
+                                // If there's an exception, assume they need to set their name
+                                val intent = Intent(this@Login, NameCollection::class.java)
+                                startActivity(intent)
+                            }
+                        }
                     } else {
                         Toast.makeText(this, it.exception.toString(), Toast.LENGTH_SHORT).show()
                     }
@@ -128,8 +157,35 @@ class Login : AppCompatActivity() {
                     // Sign in success, update UI with the signed-in user's information
                     Log.d(TAG, "signInWithCredential:success")
                     val user = firebaseAuth.currentUser
-                    val intent = Intent(this, MainActivity::class.java)
-                    startActivity(intent)
+                    lifecycleScope.launch {
+                        try {
+                            val result = ApiRepository.auth.getUser(user!!.uid)
+                            result.fold(
+                                onSuccess = { response ->
+                                    if (response.user.name.isNullOrBlank()) {
+                                        // User doesn't have a name set, go to NameCollection
+                                        val intent = Intent(this@Login, NameCollection::class.java)
+                                        startActivity(intent)
+                                    } else {
+                                        // User has a name, go to MainActivity
+                                        val intent = Intent(this@Login, MainActivity::class.java)
+                                        startActivity(intent)
+                                    }
+                                },
+                                onFailure = { exception ->
+                                    Log.e("Login", "Failed to get user info", exception)
+                                    // If we can't get user info, assume they need to set their name
+                                    val intent = Intent(this@Login, NameCollection::class.java)
+                                    startActivity(intent)
+                                }
+                            )
+                        } catch (e: Exception) {
+                            Log.e("Login", "Exception during user info fetch", e)
+                            // If there's an exception, assume they need to set their name
+                            val intent = Intent(this@Login, NameCollection::class.java)
+                            startActivity(intent)
+                        }
+                    }
                 } else {
                     // If sign in fails, display a message to the user
                     Log.w(TAG, "signInWithCredential:failure", task.exception)

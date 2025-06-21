@@ -48,6 +48,15 @@ class UserOperations:
             data=data
         )
     
+    def update_name(self, firebase_id: str, name: str) -> Optional[Dict]:
+        """Update user's name and return the updated record."""
+        return self.client._execute_query(
+            table_name=self.table_name,
+            operation='update',
+            data={'name': name},
+            filters={'firebase_id': firebase_id}
+        )
+    
     def update(self, user_id: int, data: Dict[str, Any]) -> Optional[Dict]:
         """Update user data and return the updated record."""
         return self.client._execute_query(

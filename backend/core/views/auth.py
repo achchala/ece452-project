@@ -26,18 +26,73 @@ class AuthView(viewsets.ViewSet):
                 status=status.HTTP_409_CONFLICT,
             )
 
-        # Create the new user
         new_user = supabase.users.create(email=email, firebase_id=firebase_id)
-
-        if new_user:
-            return Response({
-                "message": "User created successfully", 
-                "user": new_user
-            }, status=status.HTTP_201_CREATED)
-        else:
+        
+        if not new_user:
             return Response(
                 {"error": "Failed to create user"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+
+        return Response({
+            "message": "User created successfully",
+            "user": new_user
+        }, status=status.HTTP_201_CREATED)
+
+    @action(detail=False, methods=["post"], url_path="update-name")
+    def update_name(self, request):
+        """Update user's name in Supabase."""
+        firebase_id = request.data.get("firebaseId")
+        name = request.data.get("name")
+
+        if not all([firebase_id, name]):
+            return Response(
+                {"error": "firebaseId and name are required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
             
+        # Check if user exists
+        existing_user = supabase.users.get_by_firebase_id(firebase_id)
+        if not existing_user:
+            return Response(
+                {"error": "User not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        # Update the user's name
+        updated_user = supabase.users.update_name(firebase_id=firebase_id, name=name)
+        
+        if not updated_user:
+            return Response(
+                {"error": "Failed to update user name"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+        return Response({
+            "message": "Name updated successfully", 
+            "user": updated_user
+        }, status=status.HTTP_200_OK)
+    
+    @action(detail=False, methods=["post"], url_path="get-user")
+    def get_user(self, request):
+        """Get user information by Firebase ID."""
+        firebase_id = request.data.get("firebaseId")
+
+        if not firebase_id:
+            return Response(
+                {"error": "firebaseId is required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
             
+        # Get user information from Supabase
+        user = supabase.users.get_by_firebase_id(firebase_id)
+        
+        if not user:
+            return Response(
+                {"error": "User not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        
+        return Response({
+            "user": user
+        }, status=status.HTTP_200_OK)         

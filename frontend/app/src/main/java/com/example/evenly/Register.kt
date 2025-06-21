@@ -53,7 +53,7 @@ class Register : AppCompatActivity() {
                                 uid
                             ) }
                             result.await()
-                            val intent = Intent(this@Register, Login::class.java)
+                            val intent = Intent(this@Register, NameCollection::class.java)
                             startActivity(intent)
                         }
                     } else {
