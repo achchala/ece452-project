@@ -4,6 +4,7 @@ import logging
 from .base_client import BaseSupabaseClient
 from .operations.user_operations import UserOperations
 from .operations.friend_request_operations import FriendRequestOperations
+from .operations.expense_operations import ExpenseOperations
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -30,6 +31,7 @@ class SupabaseClient:
             # Initialize operation modules
             self.users = UserOperations(self.base_client)
             self.friend_requests = FriendRequestOperations(self.base_client)
+            self.expenses = ExpenseOperations(self.base_client)
             
             self._initialized = True
             logger.info("SupabaseClient initialized with Supabase Python client.")

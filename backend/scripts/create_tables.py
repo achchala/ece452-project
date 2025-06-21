@@ -126,7 +126,8 @@ class SupabaseTableCreator:
             id BIGSERIAL PRIMARY KEY,
             email VARCHAR(254) UNIQUE NOT NULL,
             date_joined TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-            firebase_id VARCHAR(255) UNIQUE NOT NULL
+            firebase_id VARCHAR(255) UNIQUE NOT NULL,
+            name VARCHAR(255) NULL
         );
         
         CREATE INDEX IF NOT EXISTS {table_name}_email_idx ON {table_name}(email);

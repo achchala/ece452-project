@@ -22,4 +22,30 @@ object AuthRepository {
             Result.failure(e)
         }
     }
+    
+    suspend fun updateName(firebaseId: String, name: String): Result<UpdateNameResponse> {
+        return try {
+            val response = authApiService.updateName(UpdateNameRequest(firebaseId, name))
+            if (response.isSuccessful) {
+                Result.success(response.body()!!)
+            } else {
+                Result.failure(Exception("Name update failed: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
+    suspend fun getUser(firebaseId: String): Result<GetUserResponse> {
+        return try {
+            val response = authApiService.getUser(GetUserRequest(firebaseId))
+            if (response.isSuccessful) {
+                Result.success(response.body()!!)
+            } else {
+                Result.failure(Exception("Get user failed: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 } 
