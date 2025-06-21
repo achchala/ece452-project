@@ -1,6 +1,7 @@
 package com.example.evenly.api
 
 import com.example.evenly.api.auth.AuthRepository
+import com.example.evenly.api.dashboard.DashboardRepository
 
 /**
  * Main API repository that coordinates all specialized API repositories.
@@ -10,6 +11,9 @@ import com.example.evenly.api.auth.AuthRepository
 object ApiRepository {
     // Auth repository - static instance
     val auth: AuthRepository = AuthRepository
+    
+    // Dashboard repository - static instance
+    val dashboard: DashboardRepository = DashboardRepository
     
     // Add more repositories here as needed
     // Example:

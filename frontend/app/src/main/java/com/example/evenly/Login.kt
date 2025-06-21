@@ -67,6 +67,8 @@ class Login : AppCompatActivity() {
                                         } else {
                                             // User has a name, go to MainActivity
                                             val intent = Intent(this@Login, MainActivity::class.java)
+                                            intent.putExtra("user_name", response.user.name)
+                                            intent.putExtra("user_id", response.user.id)
                                             startActivity(intent)
                                         }
                                     },
@@ -167,8 +169,10 @@ class Login : AppCompatActivity() {
                                         val intent = Intent(this@Login, NameCollection::class.java)
                                         startActivity(intent)
                                     } else {
-                                        // User has a name, go to MainActivity
+                                        // User has a name, go to MainActivity with user ID
                                         val intent = Intent(this@Login, MainActivity::class.java)
+                                        intent.putExtra("user_name", response.user.name)
+                                        intent.putExtra("user_id", response.user.id)
                                         startActivity(intent)
                                     }
                                 },

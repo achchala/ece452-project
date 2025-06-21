@@ -60,9 +60,20 @@ class NameCollection : AppCompatActivity() {
                             result.fold(
                                 onSuccess = { response ->
                                     Log.d("NameCollection", "Name updated successfully: ${response.message}")
-                                    val intent = Intent(this@NameCollection, MainActivity::class.java)
-                                    intent.putExtra("user_name", name)
-                                    startActivity(intent)
+                                    // Get the user info to get the user ID
+                                    val userResult = ApiRepository.auth.getUser(currentUser.uid)
+                                    userResult.fold(
+                                        onSuccess = { userResponse ->
+                                            val intent = Intent(this@NameCollection, MainActivity::class.java)
+                                            intent.putExtra("user_name", name)
+                                            intent.putExtra("user_id", userResponse.user.id)
+                                            startActivity(intent)
+                                        },
+                                        onFailure = { exception ->
+                                            Log.e("NameCollection", "Failed to get user info", exception)
+                                            Toast.makeText(this@NameCollection, "Failed to get user info: ${exception.message}", Toast.LENGTH_LONG).show()
+                                        }
+                                    )
                                 },
                                 onFailure = { exception ->
                                     Log.e("NameCollection", "Failed to update name", exception)

@@ -38,7 +38,7 @@ class BaseSupabaseClient:
         """Get the environment-specific table name with prefix."""
         return f"{self.table_prefix}{base_table_name}"
     
-    def _execute_query(self, table_name: str, operation: str, data: Optional[Dict] = None, filters: Optional[Dict] = None, limit: Optional[int] = None) -> Any:
+    def _execute_query(self, table_name: str, operation: str, data: Optional[Dict] = None, filters: Optional[Dict] = None, limit: Optional[int] = None, select_statement: str = "*") -> Any:
         """
         Execute a query using the Supabase client.
         
@@ -47,6 +47,7 @@ class BaseSupabaseClient:
         :param data: Data for insert/update operations
         :param filters: Filters for select/update/delete operations
         :param limit: Limit for select operations
+        :param select_statement: The select statement to use for 'select' operations
         :return: Query result
         """
         if not self.client:
@@ -57,7 +58,7 @@ class BaseSupabaseClient:
             table = self.client.table(table_name)
             
             if operation == 'select':
-                query = table.select("*")
+                query = table.select(select_statement)
                 if filters:
                     for key, value in filters.items():
                         query = query.eq(key, value)
