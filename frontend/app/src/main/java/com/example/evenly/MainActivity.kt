@@ -10,6 +10,8 @@ import androidx.lifecycle.lifecycleScope
 import com.example.evenly.api.ApiRepository
 import com.example.evenly.ui.theme.HelloWorldTheme
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.Firebase
+import com.google.firebase.auth.auth
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -27,13 +29,9 @@ class MainActivity : ComponentActivity() {
                     userId = userId,
                     userName = userName,
                     onLogout = {
-                        lifecycleScope.launch {
-//                            ApiRepository.auth.logout()
-                            val intent = Intent(this@MainActivity, Login::class.java)
-                            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                            startActivity(intent)
-                            finish()
-                        }
+                        Firebase.auth.signOut()
+                        val intent = Intent(this, Login::class.java)
+                        startActivity(intent)
                     }
                 )
             }
