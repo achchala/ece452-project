@@ -77,6 +77,7 @@ class NameCollection : AppCompatActivity() {
                                 },
                                 onFailure = { exception ->
                                     Log.e("NameCollection", "Failed to update name", exception)
+                                    println(exception)
                                     Toast.makeText(this@NameCollection, "Failed to save name: ${exception.message}", Toast.LENGTH_LONG).show()
                                 }
                             )

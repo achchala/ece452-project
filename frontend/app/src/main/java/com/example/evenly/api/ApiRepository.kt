@@ -2,6 +2,7 @@ package com.example.evenly.api
 
 import com.example.evenly.api.auth.AuthRepository
 import com.example.evenly.api.dashboard.DashboardRepository
+import com.example.evenly.api.friends.FriendsRepository
 import com.example.evenly.api.group.GroupRepository
 
 /**
@@ -16,6 +17,8 @@ object ApiRepository {
     // Dashboard repository - static instance
     val dashboard: DashboardRepository = DashboardRepository
     
+    // Friends repository - static instance
+    val friends: FriendsRepository = FriendsRepository
     // Group repository - static instance
     val group: GroupRepository = GroupRepository()
     

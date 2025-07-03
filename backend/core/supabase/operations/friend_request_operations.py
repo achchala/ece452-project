@@ -49,13 +49,16 @@ class FriendRequestOperations:
             return None
     
     def get_outgoing(self, from_user: str) -> Optional[List[Dict]]:
-        """Get outgoing friend requests from a user (both pending and completed)."""
-        result = self.client._execute_query(
-            table_name=self.table_name,
-            operation='select',
-            filters={'from_user': from_user}
-        )
-        return result
+        """Get outgoing pending friend requests from a user."""
+        if not self.client.client:
+            return None
+            
+        try:
+            result = self.client.client.table(self.table_name).select("*").eq("from_user", from_user).eq("request_completed", False).execute()
+            return result.data
+        except Exception as e:
+            print(f"Error getting outgoing friend requests: {e}")
+            return None
     
     def create(self, from_user: str, to_user: str) -> Optional[Dict]:
         """Create a friend request."""
@@ -88,10 +91,23 @@ class FriendRequestOperations:
             filters={'from_user': from_user, 'to_user': to_user}
         )
     
-    def get_friends(self, user_id: str) -> Optional[List[Dict]]:
+    def get_friends(self, user_email: str) -> Optional[List[Dict]]:
         """Get all friends for a user (where requests are completed)."""
-        query = f"""
-            SELECT * FROM {self.table_name} 
-            WHERE (from_user = %s OR to_user = %s) AND request_completed = TRUE;
-        """
-        return self.client._execute(query, (user_id, user_id), fetch='all') 
+        if not self.client.client:
+            return None
+        try:
+            from_friends = self.client._execute_query(
+                table_name=self.table_name,
+                operation='select',
+                filters={'from_user': user_email, 'request_completed': True}
+            )
+            to_friends = self.client._execute_query(
+                table_name=self.table_name,
+                operation='select',
+                filters={'to_user': user_email, 'request_completed': True}
+            )
+            all_friends = (from_friends or []) + (to_friends or [])
+            return all_friends
+        except Exception as e:
+            print(f"Error getting friends: {e}")
+            return None 

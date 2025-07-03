@@ -48,4 +48,17 @@ object AuthRepository {
             Result.failure(e)
         }
     }
+
+    suspend fun getUserByEmail(email: String): Result<GetUserByEmailResponse> {
+        return try {
+            val response = authApiService.getUserByEmail(GetUserByEmailRequest(email))
+            if (response.isSuccessful) {
+                Result.success(response.body()!!)
+            } else {
+                Result.failure(Exception("Get user by email failed: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 } 

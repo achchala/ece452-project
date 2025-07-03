@@ -96,3 +96,27 @@ class AuthView(viewsets.ViewSet):
         return Response({
             "user": user
         }, status=status.HTTP_200_OK)         
+
+    @action(detail=False, methods=["post"], url_path="get-user-by-email")
+    def get_user_by_email(self, request):
+        """Get user information by email."""
+        email = request.data.get("email")
+
+        if not email:
+            return Response(
+                {"error": "email is required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+            
+        # Get user information from Supabase
+        user = supabase.users.get_by_email(email)
+        
+        if not user:
+            return Response(
+                {"error": "User not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        
+        return Response({
+            "user": user
+        }, status=status.HTTP_200_OK)         
