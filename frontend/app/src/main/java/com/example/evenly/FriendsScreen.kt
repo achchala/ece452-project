@@ -1,6 +1,7 @@
 package com.example.evenly
 
 import android.util.Log
+import android.util.Patterns
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -32,6 +33,7 @@ fun FriendsScreen(
 ) {
     var incomingRequests by remember { mutableStateOf<List<FriendRequest>>(emptyList()) }
     var currentFriends by remember { mutableStateOf<List<FriendRequest>>(emptyList()) }
+    var outgoingRequests by remember { mutableStateOf<List<FriendRequest>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     var showAddFriendDialog by remember { mutableStateOf(false) }
@@ -41,6 +43,7 @@ fun FriendsScreen(
     var selectedTab by remember { mutableStateOf(FriendsTab.FRIENDS) }
     var friendNames by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
     var isLoadingFriendNames by remember { mutableStateOf(false) }
+    var validationError by remember { mutableStateOf<String?>(null) }
 
     val coroutineScope = rememberCoroutineScope()
 
@@ -77,6 +80,7 @@ fun FriendsScreen(
             // Load both incoming requests and current friends
             val requestsResult = ApiRepository.friends.getIncomingRequests(email)
             val friendsResult = ApiRepository.friends.getFriends(email)
+            val outgoingRequestsResult = ApiRepository.friends.getOutgoingRequests(email)
 
             requestsResult.fold(
                 onSuccess = { requests ->
@@ -84,6 +88,15 @@ fun FriendsScreen(
                 },
                 onFailure = { exception ->
                     error = exception.message ?: "Failed to load friend requests"
+                }
+            )
+
+            outgoingRequestsResult.fold(
+                onSuccess = { requests ->
+                    outgoingRequests = requests
+                },
+                onFailure = { exception ->
+                    Log.e("FriendsScreen", "Failed to load outgoing requests: ${exception.message}")
                 }
             )
 
@@ -104,6 +117,68 @@ fun FriendsScreen(
         }
     }
 
+    suspend fun validateAndSendFriendRequest(email: String): Result<String> {
+        // Validate email format
+        if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            return Result.failure(Exception("Invalid email format"))
+        }
+        
+        // Check if trying to add yourself
+        if (email == currentUserEmail) {
+            return Result.failure(Exception("Cannot send a friend request to yourself"))
+        }
+        
+        // Check if user exists in database
+        val userExistsResult = ApiRepository.auth.getUserByEmail(email)
+        userExistsResult.fold(
+            onSuccess = { 
+                // User exists, continue with validation
+            },
+            onFailure = { 
+                return Result.failure(Exception("User with this email does not exist"))
+            }
+        )
+        
+        // Check if already friends
+        val newFriendEmail = email
+        val isAlreadyFriend = currentFriends.any { friend ->
+            (friend.from_user == currentUserEmail && friend.to_user == newFriendEmail) ||
+            (friend.from_user == newFriendEmail && friend.to_user == currentUserEmail)
+        }
+        
+        if (isAlreadyFriend) {
+            return Result.failure(Exception("You are already friends with this user"))
+        }
+        
+        // Check if there's already a pending request
+        val hasPendingRequest = incomingRequests.any { request ->
+            request.from_user == newFriendEmail && request.to_user == currentUserEmail
+        }
+        
+        if (hasPendingRequest) {
+            return Result.failure(Exception("You already have a pending friend request from this user"))
+        }
+        
+        // Send the friend request
+        return try {
+            val result = ApiRepository.friends.sendFriendRequest(currentUserEmail!!, email)
+            result.fold(
+                onSuccess = { response ->
+                    if (response.status == "request sent") {
+                        Result.success("Friend request sent successfully")
+                    } else {
+                        Result.failure(Exception("Failed to send friend request"))
+                    }
+                },
+                onFailure = { exception ->
+                    Result.failure(exception)
+                }
+            )
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     // Load current user email and incoming requests on first launch
     LaunchedEffect(userId) {
         val email = getCurrentUserEmail(userId)
@@ -112,6 +187,7 @@ fun FriendsScreen(
             // Load both incoming requests and current friends
             val requestsResult = ApiRepository.friends.getIncomingRequests(email)
             val friendsResult = ApiRepository.friends.getFriends(email)
+            val outgoingRequestsResult = ApiRepository.friends.getOutgoingRequests(email)
 
             requestsResult.fold(
                 onSuccess = { requests ->
@@ -119,6 +195,15 @@ fun FriendsScreen(
                 },
                 onFailure = { exception ->
                     error = exception.message ?: "Failed to load friend requests"
+                }
+            )
+
+            outgoingRequestsResult.fold(
+                onSuccess = { requests ->
+                    outgoingRequests = requests
+                },
+                onFailure = { exception ->
+                    Log.e("FriendsScreen", "Failed to load outgoing requests: ${exception.message}")
                 }
             )
 
@@ -287,7 +372,7 @@ fun FriendsScreen(
                     }
                 }
                 FriendsTab.REQUESTS -> {
-                    if (isLoading) {
+                    if (isLoading || isLoadingFriendNames) {
                         Box(
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center
@@ -320,6 +405,7 @@ fun FriendsScreen(
                                             coroutineScope.launch {
                                                 val requestsResult = ApiRepository.friends.getIncomingRequests(email)
                                                 val friendsResult = ApiRepository.friends.getFriends(email)
+                                                val outgoingRequestsResult = ApiRepository.friends.getOutgoingRequests(email)
 
                                                 requestsResult.fold(
                                                     onSuccess = { requests ->
@@ -330,9 +416,22 @@ fun FriendsScreen(
                                                     }
                                                 )
 
+                                                outgoingRequestsResult.fold(
+                                                    onSuccess = { requests ->
+                                                        outgoingRequests = requests
+                                                    },
+                                                    onFailure = { exception ->
+                                                        Log.e("FriendsScreen", "Failed to load outgoing requests: ${exception.message}")
+                                                    }
+                                                )
+
                                                 friendsResult.fold(
                                                     onSuccess = { friends ->
                                                         currentFriends = friends
+                                                        // Fetch names for all friends
+                                                        coroutineScope.launch {
+                                                            fetchFriendNames(friends, email)
+                                                        }
                                                     },
                                                     onFailure = { exception ->
                                                         Log.e("FriendsScreen", "Failed to load friends: ${exception.message}")
@@ -349,7 +448,9 @@ fun FriendsScreen(
                             }
                         }
                     } else {
-                        if (incomingRequests.isEmpty()) {
+                        val allRequests = incomingRequests.map { it to true } + outgoingRequests.map { it to false }
+                        
+                        if (allRequests.isEmpty()) {
                             Box(
                                 modifier = Modifier.fillMaxSize(),
                                 contentAlignment = Alignment.Center
@@ -360,18 +461,12 @@ fun FriendsScreen(
                                     Icon(
                                         imageVector = Icons.Default.Person,
                                         contentDescription = null,
-                                        modifier = Modifier.size(64.dp),
+                                        modifier = Modifier.size(48.dp),
                                         tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                    Spacer(modifier = Modifier.height(16.dp))
-                                    Text(
-                                        text = "No friend requests yet",
-                                        style = MaterialTheme.typography.headlineSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                     Spacer(modifier = Modifier.height(8.dp))
                                     Text(
-                                        text = "Accept friend requests here to add new friends",
+                                        text = "No friend requests",
                                         style = MaterialTheme.typography.bodyMedium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -382,9 +477,10 @@ fun FriendsScreen(
                                 verticalArrangement = Arrangement.spacedBy(12.dp),
                                 modifier = Modifier.fillMaxSize()
                             ) {
-                                items(incomingRequests) { request ->
+                                items(allRequests) { (request, isIncoming) ->
                                     FriendRequestCard(
                                         request = request,
+                                        isIncoming = isIncoming,
                                         onAccept = { fromUser ->
                                             currentUserEmail?.let { currentEmail ->
                                                 coroutineScope.launch {
@@ -417,6 +513,25 @@ fun FriendsScreen(
                                                             },
                                                             onFailure = { exception ->
                                                                 error = exception.message ?: "Failed to reject friend request"
+                                                            }
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        onCancel = { toUser ->
+                                            currentUserEmail?.let { currentEmail ->
+                                                coroutineScope.launch {
+                                                    rejectFriendRequest(currentEmail, toUser) { result ->
+                                                        result.fold(
+                                                            onSuccess = {
+                                                                // Refresh all data after canceling
+                                                                coroutineScope.launch {
+                                                                    refreshAllData()
+                                                                }
+                                                            },
+                                                            onFailure = { exception ->
+                                                                error = exception.message ?: "Failed to cancel friend request"
                                                             }
                                                         )
                                                     }
@@ -455,6 +570,7 @@ fun FriendsScreen(
                 if (!isAddingFriend) {
                     showAddFriendDialog = false
                     friendEmail = ""
+                    validationError = null
                 }
             },
             title = {
@@ -475,6 +591,14 @@ fun FriendsScreen(
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
+                    if (validationError != null) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = validationError!!,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
                 }
             },
             confirmButton = {
@@ -482,27 +606,22 @@ fun FriendsScreen(
                     onClick = {
                         if (friendEmail.isNotBlank() && currentUserEmail != null) {
                             isAddingFriend = true
+                            validationError = null // Clear previous errors
                             coroutineScope.launch {
-                                sendFriendRequest(currentUserEmail!!, friendEmail) { result ->
-                                    result.fold(
-                                        onSuccess = { response ->
-                                            if (response.status == "request sent") {
-                                                showAddFriendDialog = false
-                                                friendEmail = ""
-                                                // Refresh data after sending friend request
-                                                coroutineScope.launch {
-                                                    refreshAllData()
-                                                }
-                                            } else {
-                                                error = "Failed to send friend request"
-                                            }
-                                        },
-                                        onFailure = { exception ->
-                                            error = exception.message ?: "Failed to send friend request"
-                                        }
-                                    )
-                                    isAddingFriend = false
-                                }
+                                val validationResult = validateAndSendFriendRequest(friendEmail)
+                                validationResult.fold(
+                                    onSuccess = { message ->
+                                        showAddFriendDialog = false
+                                        friendEmail = ""
+                                        validationError = null
+                                        // Refresh data after sending friend request
+                                        refreshAllData()
+                                    },
+                                    onFailure = { exception ->
+                                        validationError = exception.message ?: "Failed to send friend request"
+                                    }
+                                )
+                                isAddingFriend = false
                             }
                         }
                     },
@@ -523,6 +642,7 @@ fun FriendsScreen(
                     onClick = {
                         showAddFriendDialog = false
                         friendEmail = ""
+                        validationError = null
                     },
                     enabled = !isAddingFriend
                 ) {
@@ -533,87 +653,7 @@ fun FriendsScreen(
     }
 }
 
-@Composable
-fun FriendRequestCard(
-    request: FriendRequest,
-    onAccept: (String) -> Unit,
-    onReject: (String) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Person,
-                    contentDescription = null,
-                    modifier = Modifier.size(40.dp),
-                    tint = MaterialTheme.colorScheme.primary
-                )
-                Spacer(modifier = Modifier.width(16.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Friend Request",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Medium
-                    )
-                    Text(
-                        text = "From: ${request.from_user}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Button(
-                    onClick = { onAccept(request.from_user) },
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary
-                    )
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Check,
-                        contentDescription = "Accept",
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Accept")
-                }
-                Button(
-                    onClick = { onReject(request.from_user) },
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error
-                    )
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = "Reject",
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Reject")
-                }
-            }
-        }
-    }
-}
+
 
 @Composable
 fun FriendCard(
@@ -657,6 +697,118 @@ fun FriendCard(
     }
 }
 
+@Composable
+fun FriendRequestCard(
+    request: FriendRequest,
+    isIncoming: Boolean,
+    onAccept: (String) -> Unit,
+    onReject: (String) -> Unit,
+    onCancel: (String) -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isIncoming) 
+                MaterialTheme.colorScheme.surface 
+            else 
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Icon to distinguish request type
+            Icon(
+                imageVector = Icons.Default.Person,
+                contentDescription = if (isIncoming) "Incoming request" else "Outgoing request",
+                modifier = Modifier.size(24.dp),
+                tint = if (isIncoming) 
+                    MaterialTheme.colorScheme.primary 
+                else 
+                    MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            
+            Spacer(modifier = Modifier.width(12.dp))
+            
+            // Request details
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = if (isIncoming) "Friend request from" else "Friend request to",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = if (isIncoming) request.from_user else request.to_user,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Medium
+                )
+                if (!isIncoming) {
+                    Text(
+                        text = "Pending",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(top = 2.dp)
+                    )
+                }
+            }
+            
+            // Action buttons
+            if (isIncoming) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Button(
+                        onClick = { onAccept(request.from_user) },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        ),
+                        modifier = Modifier.height(32.dp)
+                    ) {
+                        Text(
+                            text = "Accept",
+                            style = MaterialTheme.typography.labelSmall
+                        )
+                    }
+                    
+                    OutlinedButton(
+                        onClick = { onReject(request.from_user) },
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error
+                        ),
+                        modifier = Modifier.height(32.dp)
+                    ) {
+                        Text(
+                            text = "Reject",
+                            style = MaterialTheme.typography.labelSmall
+                        )
+                    }
+                }
+            } else {
+                OutlinedButton(
+                    onClick = { onCancel(request.to_user) },
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    ),
+                    modifier = Modifier.height(32.dp)
+                ) {
+                    Text(
+                        text = "Cancel",
+                        style = MaterialTheme.typography.labelSmall
+                    )
+                }
+            }
+        }
+    }
+}
+
 private suspend fun getCurrentUserEmail(userId: Int): String? {
     val currentUser = FirebaseAuth.getInstance().currentUser
     Log.d("FriendsScreen", "getCurrentUserEmail called with userId: $userId")
@@ -686,11 +838,6 @@ private suspend fun getCurrentUserEmail(userId: Int): String? {
         Log.e("FriendsScreen", "Exception stack trace: ${e.stackTraceToString()}")
         null
     }
-}
-
-private suspend fun sendFriendRequest(fromUser: String, toUser: String, onResult: (Result<com.example.evenly.api.friends.SendFriendRequestResponse>) -> Unit) {
-    val result = ApiRepository.friends.sendFriendRequest(fromUser, toUser)
-    onResult(result)
 }
 
 private suspend fun acceptFriendRequest(fromUser: String, toUser: String, onResult: (Result<com.example.evenly.api.friends.AcceptFriendRequestResponse>) -> Unit) {

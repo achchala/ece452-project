@@ -6,6 +6,9 @@ interface FriendsApiService {
     @GET("/api/friend/get-all-requests/")
     suspend fun getIncomingRequests(@Query("username") username: String): GetRequestsResponse
     
+    @GET("/api/friend/get-outgoing-requests/")
+    suspend fun getOutgoingRequests(@Query("username") username: String): GetRequestsResponse
+    
     @GET("/api/friend/get-friends/")
     suspend fun getFriends(@Query("username") username: String): GetFriendsResponse
     

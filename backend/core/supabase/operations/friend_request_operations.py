@@ -49,13 +49,16 @@ class FriendRequestOperations:
             return None
     
     def get_outgoing(self, from_user: str) -> Optional[List[Dict]]:
-        """Get outgoing friend requests from a user (both pending and completed)."""
-        result = self.client._execute_query(
-            table_name=self.table_name,
-            operation='select',
-            filters={'from_user': from_user}
-        )
-        return result
+        """Get outgoing pending friend requests from a user."""
+        if not self.client.client:
+            return None
+            
+        try:
+            result = self.client.client.table(self.table_name).select("*").eq("from_user", from_user).eq("request_completed", False).execute()
+            return result.data
+        except Exception as e:
+            print(f"Error getting outgoing friend requests: {e}")
+            return None
     
     def create(self, from_user: str, to_user: str) -> Optional[Dict]:
         """Create a friend request."""

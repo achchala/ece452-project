@@ -93,6 +93,22 @@ class FriendRequestView(viewsets.ViewSet):
                 {"error": "Request not found"}, status=status.HTTP_404_NOT_FOUND
             )
 
+    @action(detail=False, methods=["get"], url_path="get-outgoing-requests")
+    def get_outgoing_requests(self, request):
+        """Get all outgoing, pending friend requests from a user."""
+        from_user = request.query_params.get("username")
+        if not from_user:
+            return Response(
+                {"error": "Username is required"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        requests = supabase.friend_requests.get_outgoing(from_user)
+        
+        if requests is None:
+            return Response({"error": "Failed to retrieve outgoing requests"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+        return Response({"requests": requests})
+
     @action(detail=False, methods=["get"], url_path="get-friends")
     def get_friends(self, request):
         """Get all current friends for a user."""
