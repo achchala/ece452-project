@@ -39,31 +39,110 @@ fun FriendsScreen(
     var isAddingFriend by remember { mutableStateOf(false) }
     var currentUserEmail by remember { mutableStateOf<String?>(null) }
     var selectedTab by remember { mutableStateOf(FriendsTab.FRIENDS) }
-    
+    var friendNames by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
+    var isLoadingFriendNames by remember { mutableStateOf(false) }
+
     val coroutineScope = rememberCoroutineScope()
-    
+
+    suspend fun fetchFriendNames(friends: List<FriendRequest>, currentUserEmail: String) {
+        isLoadingFriendNames = true
+        val namesMap = mutableMapOf<String, String>()
+        for (friend in friends) {
+            val friendEmail = if (friend.from_user == currentUserEmail) friend.to_user else friend.from_user
+            try {
+                val userResult = ApiRepository.auth.getUserByEmail(friendEmail)
+                userResult.fold(
+                    onSuccess = { response ->
+                        response.user.name?.let { name ->
+                            namesMap[friendEmail] = name
+                        }
+                    },
+                    onFailure = { exception ->
+                        Log.e("FriendsScreen", "Failed to get friend name for $friendEmail: ${exception.message}")
+                    }
+                )
+            } catch (e: Exception) {
+                Log.e("FriendsScreen", "Exception getting friend name for $friendEmail: ${e.message}")
+            }
+        }
+        friendNames = namesMap
+        isLoadingFriendNames = false
+    }
+
+    suspend fun refreshAllData() {
+        currentUserEmail?.let { email ->
+            isLoading = true
+            error = null
+            
+            // Load both incoming requests and current friends
+            val requestsResult = ApiRepository.friends.getIncomingRequests(email)
+            val friendsResult = ApiRepository.friends.getFriends(email)
+
+            requestsResult.fold(
+                onSuccess = { requests ->
+                    incomingRequests = requests
+                },
+                onFailure = { exception ->
+                    error = exception.message ?: "Failed to load friend requests"
+                }
+            )
+
+            friendsResult.fold(
+                onSuccess = { friends ->
+                    currentFriends = friends
+                    // Fetch names for all friends
+                    coroutineScope.launch {
+                        fetchFriendNames(friends, email)
+                    }
+                },
+                onFailure = { exception ->
+                    Log.e("FriendsScreen", "Failed to load friends: ${exception.message}")
+                }
+            )
+
+            isLoading = false
+        }
+    }
+
     // Load current user email and incoming requests on first launch
     LaunchedEffect(userId) {
         val email = getCurrentUserEmail(userId)
         currentUserEmail = email
         if (email != null) {
-            val result = ApiRepository.friends.getIncomingRequests(email)
-            result.fold(
+            // Load both incoming requests and current friends
+            val requestsResult = ApiRepository.friends.getIncomingRequests(email)
+            val friendsResult = ApiRepository.friends.getFriends(email)
+
+            requestsResult.fold(
                 onSuccess = { requests ->
                     incomingRequests = requests
-                    isLoading = false
                 },
                 onFailure = { exception ->
                     error = exception.message ?: "Failed to load friend requests"
-                    isLoading = false
                 }
             )
+
+            friendsResult.fold(
+                onSuccess = { friends ->
+                    currentFriends = friends
+                    // Fetch names for all friends
+                    coroutineScope.launch {
+                        fetchFriendNames(friends, email)
+                    }
+                },
+                onFailure = { exception ->
+                    // Don't set error for friends loading failure, just log it
+                    Log.e("FriendsScreen", "Failed to load friends: ${exception.message}")
+                }
+            )
+
+            isLoading = false
         } else {
             error = "Could not retrieve user email"
             isLoading = false
         }
     }
-    
+
     Box(modifier = modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
@@ -89,13 +168,13 @@ fun FriendsScreen(
                     modifier = Modifier.weight(1f)
                 )
             }
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             // Content based on selected tab
             when (selectedTab) {
                 FriendsTab.FRIENDS -> {
-                    if (isLoading) {
+                    if (isLoading || isLoadingFriendNames) {
                         Box(
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center
@@ -126,17 +205,32 @@ fun FriendsScreen(
                                         error = null
                                         currentUserEmail?.let { email ->
                                             coroutineScope.launch {
-                                                val result = ApiRepository.friends.getIncomingRequests(email)
-                                                result.fold(
+                                                val requestsResult = ApiRepository.friends.getIncomingRequests(email)
+                                                val friendsResult = ApiRepository.friends.getFriends(email)
+
+                                                requestsResult.fold(
                                                     onSuccess = { requests ->
                                                         incomingRequests = requests
-                                                        isLoading = false
                                                     },
                                                     onFailure = { exception ->
                                                         error = exception.message ?: "Failed to load friend requests"
-                                                        isLoading = false
                                                     }
                                                 )
+
+                                                friendsResult.fold(
+                                                    onSuccess = { friends ->
+                                                        currentFriends = friends
+                                                        // Fetch names for all friends
+                                                        coroutineScope.launch {
+                                                            fetchFriendNames(friends, email)
+                                                        }
+                                                    },
+                                                    onFailure = { exception ->
+                                                        Log.e("FriendsScreen", "Failed to load friends: ${exception.message}")
+                                                    }
+                                                )
+
+                                                isLoading = false
                                             }
                                         }
                                     }
@@ -180,7 +274,13 @@ fun FriendsScreen(
                                 modifier = Modifier.fillMaxSize()
                             ) {
                                 items(currentFriends) { friend ->
-                                    FriendCard(friend = friend)
+                                    val friendEmail = if (friend.from_user == currentUserEmail) friend.to_user else friend.from_user
+                                    val friendName = friendNames[friendEmail]
+                                    FriendCard(
+                                        friend = friend,
+                                        currentUserEmail = currentUserEmail,
+                                        friendName = friendName
+                                    )
                                 }
                             }
                         }
@@ -218,17 +318,28 @@ fun FriendsScreen(
                                         error = null
                                         currentUserEmail?.let { email ->
                                             coroutineScope.launch {
-                                                val result = ApiRepository.friends.getIncomingRequests(email)
-                                                result.fold(
+                                                val requestsResult = ApiRepository.friends.getIncomingRequests(email)
+                                                val friendsResult = ApiRepository.friends.getFriends(email)
+
+                                                requestsResult.fold(
                                                     onSuccess = { requests ->
                                                         incomingRequests = requests
-                                                        isLoading = false
                                                     },
                                                     onFailure = { exception ->
                                                         error = exception.message ?: "Failed to load friend requests"
-                                                        isLoading = false
                                                     }
                                                 )
+
+                                                friendsResult.fold(
+                                                    onSuccess = { friends ->
+                                                        currentFriends = friends
+                                                    },
+                                                    onFailure = { exception ->
+                                                        Log.e("FriendsScreen", "Failed to load friends: ${exception.message}")
+                                                    }
+                                                )
+
+                                                isLoading = false
                                             }
                                         }
                                     }
@@ -280,8 +391,10 @@ fun FriendsScreen(
                                                     acceptFriendRequest(fromUser, currentEmail) { result ->
                                                         result.fold(
                                                             onSuccess = {
-                                                                // Remove the accepted request from the list
-                                                                incomingRequests = incomingRequests.filter { it.from_user != fromUser }
+                                                                // Refresh all data after accepting
+                                                                coroutineScope.launch {
+                                                                    refreshAllData()
+                                                                }
                                                             },
                                                             onFailure = { exception ->
                                                                 error = exception.message ?: "Failed to accept friend request"
@@ -297,8 +410,10 @@ fun FriendsScreen(
                                                     rejectFriendRequest(fromUser, currentEmail) { result ->
                                                         result.fold(
                                                             onSuccess = {
-                                                                // Remove the rejected request from the list
-                                                                incomingRequests = incomingRequests.filter { it.from_user != fromUser }
+                                                                // Refresh all data after rejecting
+                                                                coroutineScope.launch {
+                                                                    refreshAllData()
+                                                                }
                                                             },
                                                             onFailure = { exception ->
                                                                 error = exception.message ?: "Failed to reject friend request"
@@ -316,7 +431,7 @@ fun FriendsScreen(
                 }
             }
         }
-        
+
         // Floating Action Button
         FloatingActionButton(
             onClick = { showAddFriendDialog = true },
@@ -332,11 +447,11 @@ fun FriendsScreen(
             )
         }
     }
-    
+
     // Send Friend Request Dialog
     if (showAddFriendDialog) {
         AlertDialog(
-            onDismissRequest = { 
+            onDismissRequest = {
                 if (!isAddingFriend) {
                     showAddFriendDialog = false
                     friendEmail = ""
@@ -374,6 +489,10 @@ fun FriendsScreen(
                                             if (response.status == "request sent") {
                                                 showAddFriendDialog = false
                                                 friendEmail = ""
+                                                // Refresh data after sending friend request
+                                                coroutineScope.launch {
+                                                    refreshAllData()
+                                                }
                                             } else {
                                                 error = "Failed to send friend request"
                                             }
@@ -401,7 +520,7 @@ fun FriendsScreen(
             },
             dismissButton = {
                 TextButton(
-                    onClick = { 
+                    onClick = {
                         showAddFriendDialog = false
                         friendEmail = ""
                     },
@@ -499,6 +618,8 @@ fun FriendRequestCard(
 @Composable
 fun FriendCard(
     friend: FriendRequest,
+    currentUserEmail: String?,
+    friendName: String?,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -522,12 +643,12 @@ fun FriendCard(
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Friend",
+                    text = friendName ?: "Friend",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Medium
                 )
                 Text(
-                    text = "Email: ${friend.from_user}",
+                    text = "Email: ${if (friend.from_user == currentUserEmail) friend.to_user else friend.from_user}",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -544,20 +665,20 @@ private suspend fun getCurrentUserEmail(userId: Int): String? {
         Log.e("FriendsScreen", "No Firebase user available")
         return null
     }
-    
+
     Log.d("FriendsScreen", "Firebase user found with UID: ${currentUser.uid}")
     Log.d("FriendsScreen", "About to call API with firebaseId: ${currentUser.uid}")
     return try {
         val userResult = ApiRepository.auth.getUser(currentUser.uid)
         Log.d("FriendsScreen", "API call completed, result: $userResult")
         userResult.fold(
-            onSuccess = { 
+            onSuccess = {
                 Log.d("FriendsScreen", "Successfully got user email: ${it.user.email}")
-                it.user.email 
+                it.user.email
             },
-            onFailure = { 
+            onFailure = {
                 Log.e("FriendsScreen", "Failed to get user from API: ${it.message}")
-                null 
+                null
             }
         )
     } catch (e: Exception) {

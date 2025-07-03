@@ -6,6 +6,8 @@ import com.example.evenly.api.auth.models.UpdateNameRequest
 import com.example.evenly.api.auth.models.UpdateNameResponse
 import com.example.evenly.api.auth.models.GetUserRequest
 import com.example.evenly.api.auth.models.GetUserResponse
+import com.example.evenly.api.auth.models.GetUserByEmailRequest
+import com.example.evenly.api.auth.models.GetUserByEmailResponse
 
 import retrofit2.Response
 import retrofit2.http.*
@@ -23,4 +25,7 @@ interface AuthApiService {
     
     @POST("api/auth/get-user/")
     suspend fun getUser(@Body getUserRequest: GetUserRequest): Response<GetUserResponse>
+
+    @POST("api/auth/get-user-by-email/")
+    suspend fun getUserByEmail(@Body getUserByEmailRequest: GetUserByEmailRequest): retrofit2.Response<GetUserByEmailResponse>
 } 

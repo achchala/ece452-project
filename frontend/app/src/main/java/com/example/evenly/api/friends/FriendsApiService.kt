@@ -6,6 +6,9 @@ interface FriendsApiService {
     @GET("/api/friend/get-all-requests/")
     suspend fun getIncomingRequests(@Query("username") username: String): GetRequestsResponse
     
+    @GET("/api/friend/get-friends/")
+    suspend fun getFriends(@Query("username") username: String): GetFriendsResponse
+    
     @POST("/api/friend/add-friend/")
     suspend fun sendFriendRequest(@Body request: SendFriendRequestRequest): SendFriendRequestResponse
     
@@ -26,6 +29,10 @@ data class FriendRequest(
 
 data class GetRequestsResponse(
     val requests: List<FriendRequest>
+)
+
+data class GetFriendsResponse(
+    val friends: List<FriendRequest>
 )
 
 data class SendFriendRequestRequest(

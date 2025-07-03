@@ -16,6 +16,15 @@ object FriendsRepository {
         }
     }
     
+    suspend fun getFriends(username: String): Result<List<FriendRequest>> = withContext(Dispatchers.IO) {
+        try {
+            val response = friendsApiService.getFriends(username)
+            Result.success(response.friends)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
     suspend fun sendFriendRequest(fromUser: String, toUser: String): Result<SendFriendRequestResponse> = withContext(Dispatchers.IO) {
         try {
             val request = SendFriendRequestRequest(fromUser, toUser)

@@ -92,3 +92,19 @@ class FriendRequestView(viewsets.ViewSet):
             return Response(
                 {"error": "Request not found"}, status=status.HTTP_404_NOT_FOUND
             )
+
+    @action(detail=False, methods=["get"], url_path="get-friends")
+    def get_friends(self, request):
+        """Get all current friends for a user."""
+        username = request.query_params.get("username")
+        if not username:
+            return Response(
+                {"error": "Username is required"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        friends = supabase.friend_requests.get_friends(username)
+        
+        if friends is None:
+            return Response({"error": "Failed to retrieve friends"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+        return Response({"friends": friends})
