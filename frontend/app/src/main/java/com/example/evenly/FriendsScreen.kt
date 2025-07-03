@@ -16,6 +16,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.material.pullrefresh.PullRefreshIndicator
+import androidx.compose.material.pullrefresh.pullRefresh
+import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import com.example.evenly.api.ApiRepository
 import com.example.evenly.api.friends.FriendRequest
 import com.google.firebase.auth.FirebaseAuth
@@ -44,6 +47,7 @@ fun FriendsScreen(
     var friendNames by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
     var isLoadingFriendNames by remember { mutableStateOf(false) }
     var validationError by remember { mutableStateOf<String?>(null) }
+    var isRefreshing by remember { mutableStateOf(false) }
 
     val coroutineScope = rememberCoroutineScope()
 
@@ -150,12 +154,18 @@ fun FriendsScreen(
             return Result.failure(Exception("You are already friends with this user"))
         }
         
-        // Check if there's already a pending request
-        val hasPendingRequest = incomingRequests.any { request ->
-            request.from_user == newFriendEmail && request.to_user == currentUserEmail
+        // Check if there's already a pending outgoing request
+        val hasPendingOutgoingRequest = outgoingRequests.any { request ->
+            request.to_user == email && request.from_user == currentUserEmail
         }
-        
-        if (hasPendingRequest) {
+        if (hasPendingOutgoingRequest) {
+            return Result.failure(Exception("You already have a pending friend request to this user"))
+        }
+        // Check if there's already a pending incoming request
+        val hasPendingIncomingRequest = incomingRequests.any { request ->
+            request.from_user == email && request.to_user == currentUserEmail
+        }
+        if (hasPendingIncomingRequest) {
             return Result.failure(Exception("You already have a pending friend request from this user"))
         }
         
@@ -259,289 +269,295 @@ fun FriendsScreen(
             // Content based on selected tab
             when (selectedTab) {
                 FriendsTab.FRIENDS -> {
-                    if (isLoading || isLoadingFriendNames) {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator()
-                        }
-                    } else if (error != null) {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text(
-                                    text = "Error",
-                                    style = MaterialTheme.typography.headlineSmall,
-                                    color = MaterialTheme.colorScheme.error
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    text = error!!,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.error
-                                )
-                                Spacer(modifier = Modifier.height(16.dp))
-                                Button(
-                                    onClick = {
-                                        isLoading = true
-                                        error = null
-                                        currentUserEmail?.let { email ->
-                                            coroutineScope.launch {
-                                                val requestsResult = ApiRepository.friends.getIncomingRequests(email)
-                                                val friendsResult = ApiRepository.friends.getFriends(email)
-
-                                                requestsResult.fold(
-                                                    onSuccess = { requests ->
-                                                        incomingRequests = requests
-                                                    },
-                                                    onFailure = { exception ->
-                                                        error = exception.message ?: "Failed to load friend requests"
-                                                    }
-                                                )
-
-                                                friendsResult.fold(
-                                                    onSuccess = { friends ->
-                                                        currentFriends = friends
-                                                        // Fetch names for all friends
-                                                        coroutineScope.launch {
-                                                            fetchFriendNames(friends, email)
-                                                        }
-                                                    },
-                                                    onFailure = { exception ->
-                                                        Log.e("FriendsScreen", "Failed to load friends: ${exception.message}")
-                                                    }
-                                                )
-
-                                                isLoading = false
-                                            }
-                                        }
-                                    }
-                                ) {
-                                    Text("Retry")
+                    val pullRefreshState = rememberPullRefreshState(
+                        refreshing = isRefreshing,
+                        onRefresh = {
+                            currentUserEmail?.let { email ->
+                                coroutineScope.launch {
+                                    isRefreshing = true
+                                    refreshAllData()
+                                    isRefreshing = false
                                 }
                             }
                         }
-                    } else {
-                        if (currentFriends.isEmpty()) {
+                    )
+                    
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .pullRefresh(pullRefreshState)
+                    ) {
+                        if (isLoading || isLoadingFriendNames) {
                             Box(
                                 modifier = Modifier.fillMaxSize(),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Person,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(64.dp),
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                    Spacer(modifier = Modifier.height(16.dp))
+                                CircularProgressIndicator()
+                            }
+                        } else if (error != null) {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Text(
-                                        text = "No friends yet",
+                                        text = "Error",
                                         style = MaterialTheme.typography.headlineSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        color = MaterialTheme.colorScheme.error
                                     )
                                     Spacer(modifier = Modifier.height(8.dp))
                                     Text(
-                                        text = "Accept friend requests to see your friends here",
+                                        text = error!!,
                                         style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        color = MaterialTheme.colorScheme.error
                                     )
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                    Button(
+                                        onClick = {
+                                            isLoading = true
+                                            error = null
+                                            currentUserEmail?.let { email ->
+                                                coroutineScope.launch {
+                                                    isRefreshing = true
+                                                    refreshAllData()
+                                                    isRefreshing = false
+                                                }
+                                            }
+                                        }
+                                    ) {
+                                        Text("Retry")
+                                    }
                                 }
                             }
                         } else {
-                            LazyColumn(
-                                verticalArrangement = Arrangement.spacedBy(12.dp),
-                                modifier = Modifier.fillMaxSize()
-                            ) {
-                                items(currentFriends) { friend ->
-                                    val friendEmail = if (friend.from_user == currentUserEmail) friend.to_user else friend.from_user
-                                    val friendName = friendNames[friendEmail]
-                                    FriendCard(
-                                        friend = friend,
-                                        currentUserEmail = currentUserEmail,
-                                        friendName = friendName
-                                    )
+                            if (currentFriends.isEmpty()) {
+                                LazyColumn(
+                                    modifier = Modifier.fillMaxSize(),
+                                    verticalArrangement = Arrangement.Center
+                                ) {
+                                    item {
+                                        Box(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Column(
+                                                horizontalAlignment = Alignment.CenterHorizontally
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Person,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(64.dp),
+                                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                                Spacer(modifier = Modifier.height(16.dp))
+                                                Text(
+                                                    text = "No friends yet",
+                                                    style = MaterialTheme.typography.headlineSmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                                Spacer(modifier = Modifier.height(8.dp))
+                                                Text(
+                                                    text = "Add friends to start splitting expenses",
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            } else {
+                                LazyColumn(
+                                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                                    modifier = Modifier.fillMaxSize()
+                                ) {
+                                    items(currentFriends) { friend ->
+                                        FriendCard(
+                                            friend = friend,
+                                            currentUserEmail = currentUserEmail,
+                                            friendName = friendNames[if (friend.from_user == currentUserEmail) friend.to_user else friend.from_user]
+                                        )
+                                    }
                                 }
                             }
                         }
+                        
+                        PullRefreshIndicator(
+                            refreshing = isRefreshing,
+                            state = pullRefreshState,
+                            modifier = Modifier.align(Alignment.TopCenter)
+                        )
                     }
                 }
                 FriendsTab.REQUESTS -> {
-                    if (isLoading || isLoadingFriendNames) {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator()
-                        }
-                    } else if (error != null) {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text(
-                                    text = "Error",
-                                    style = MaterialTheme.typography.headlineSmall,
-                                    color = MaterialTheme.colorScheme.error
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    text = error!!,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.error
-                                )
-                                Spacer(modifier = Modifier.height(16.dp))
-                                Button(
-                                    onClick = {
-                                        isLoading = true
-                                        error = null
-                                        currentUserEmail?.let { email ->
-                                            coroutineScope.launch {
-                                                val requestsResult = ApiRepository.friends.getIncomingRequests(email)
-                                                val friendsResult = ApiRepository.friends.getFriends(email)
-                                                val outgoingRequestsResult = ApiRepository.friends.getOutgoingRequests(email)
-
-                                                requestsResult.fold(
-                                                    onSuccess = { requests ->
-                                                        incomingRequests = requests
-                                                    },
-                                                    onFailure = { exception ->
-                                                        error = exception.message ?: "Failed to load friend requests"
-                                                    }
-                                                )
-
-                                                outgoingRequestsResult.fold(
-                                                    onSuccess = { requests ->
-                                                        outgoingRequests = requests
-                                                    },
-                                                    onFailure = { exception ->
-                                                        Log.e("FriendsScreen", "Failed to load outgoing requests: ${exception.message}")
-                                                    }
-                                                )
-
-                                                friendsResult.fold(
-                                                    onSuccess = { friends ->
-                                                        currentFriends = friends
-                                                        // Fetch names for all friends
-                                                        coroutineScope.launch {
-                                                            fetchFriendNames(friends, email)
-                                                        }
-                                                    },
-                                                    onFailure = { exception ->
-                                                        Log.e("FriendsScreen", "Failed to load friends: ${exception.message}")
-                                                    }
-                                                )
-
-                                                isLoading = false
-                                            }
-                                        }
-                                    }
-                                ) {
-                                    Text("Retry")
+                    val pullRefreshState = rememberPullRefreshState(
+                        refreshing = isRefreshing,
+                        onRefresh = {
+                            currentUserEmail?.let { email ->
+                                coroutineScope.launch {
+                                    isRefreshing = true
+                                    refreshAllData()
+                                    isRefreshing = false
                                 }
                             }
                         }
-                    } else {
-                        val allRequests = incomingRequests.map { it to true } + outgoingRequests.map { it to false }
-                        
-                        if (allRequests.isEmpty()) {
+                    )
+                    
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .pullRefresh(pullRefreshState)
+                    ) {
+                        if (isLoading || isLoadingFriendNames) {
                             Box(
                                 modifier = Modifier.fillMaxSize(),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Person,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(48.dp),
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                CircularProgressIndicator()
+                            }
+                        } else if (error != null) {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(
+                                        text = "Error",
+                                        style = MaterialTheme.typography.headlineSmall,
+                                        color = MaterialTheme.colorScheme.error
                                     )
                                     Spacer(modifier = Modifier.height(8.dp))
                                     Text(
-                                        text = "No friend requests",
+                                        text = error!!,
                                         style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        color = MaterialTheme.colorScheme.error
                                     )
-                                }
-                            }
-                        } else {
-                            LazyColumn(
-                                verticalArrangement = Arrangement.spacedBy(12.dp),
-                                modifier = Modifier.fillMaxSize()
-                            ) {
-                                items(allRequests) { (request, isIncoming) ->
-                                    FriendRequestCard(
-                                        request = request,
-                                        isIncoming = isIncoming,
-                                        onAccept = { fromUser ->
-                                            currentUserEmail?.let { currentEmail ->
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                    Button(
+                                        onClick = {
+                                            isLoading = true
+                                            error = null
+                                            currentUserEmail?.let { email ->
                                                 coroutineScope.launch {
-                                                    acceptFriendRequest(fromUser, currentEmail) { result ->
-                                                        result.fold(
-                                                            onSuccess = {
-                                                                // Refresh all data after accepting
-                                                                coroutineScope.launch {
-                                                                    refreshAllData()
-                                                                }
-                                                            },
-                                                            onFailure = { exception ->
-                                                                error = exception.message ?: "Failed to accept friend request"
-                                                            }
-                                                        )
-                                                    }
-                                                }
-                                            }
-                                        },
-                                        onReject = { fromUser ->
-                                            currentUserEmail?.let { currentEmail ->
-                                                coroutineScope.launch {
-                                                    rejectFriendRequest(fromUser, currentEmail) { result ->
-                                                        result.fold(
-                                                            onSuccess = {
-                                                                // Refresh all data after rejecting
-                                                                coroutineScope.launch {
-                                                                    refreshAllData()
-                                                                }
-                                                            },
-                                                            onFailure = { exception ->
-                                                                error = exception.message ?: "Failed to reject friend request"
-                                                            }
-                                                        )
-                                                    }
-                                                }
-                                            }
-                                        },
-                                        onCancel = { toUser ->
-                                            currentUserEmail?.let { currentEmail ->
-                                                coroutineScope.launch {
-                                                    rejectFriendRequest(currentEmail, toUser) { result ->
-                                                        result.fold(
-                                                            onSuccess = {
-                                                                // Refresh all data after canceling
-                                                                coroutineScope.launch {
-                                                                    refreshAllData()
-                                                                }
-                                                            },
-                                                            onFailure = { exception ->
-                                                                error = exception.message ?: "Failed to cancel friend request"
-                                                            }
-                                                        )
-                                                    }
+                                                    isRefreshing = true
+                                                    refreshAllData()
+                                                    isRefreshing = false
                                                 }
                                             }
                                         }
-                                    )
+                                    ) {
+                                        Text("Retry")
+                                    }
+                                }
+                            }
+                        } else {
+                            val allRequests = incomingRequests.map { it to true } + outgoingRequests.map { it to false }
+                            
+                            if (allRequests.isEmpty()) {
+                                LazyColumn(
+                                    modifier = Modifier.fillMaxSize(),
+                                    verticalArrangement = Arrangement.Center
+                                ) {
+                                    item {
+                                        Box(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Column(
+                                                horizontalAlignment = Alignment.CenterHorizontally
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Person,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(48.dp),
+                                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                                Spacer(modifier = Modifier.height(8.dp))
+                                                Text(
+                                                    text = "No friend requests",
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            } else {
+                                LazyColumn(
+                                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                                    modifier = Modifier.fillMaxSize()
+                                ) {
+                                    items(allRequests) { (request, isIncoming) ->
+                                        FriendRequestCard(
+                                            request = request,
+                                            isIncoming = isIncoming,
+                                            onAccept = { fromUser ->
+                                                currentUserEmail?.let { currentEmail ->
+                                                    coroutineScope.launch {
+                                                        acceptFriendRequest(fromUser, currentEmail) { result ->
+                                                            result.fold(
+                                                                onSuccess = {
+                                                                    // Refresh all data after accepting
+                                                                    coroutineScope.launch {
+                                                                        refreshAllData()
+                                                                    }
+                                                                },
+                                                                onFailure = { exception ->
+                                                                    error = exception.message ?: "Failed to accept friend request"
+                                                                }
+                                                            )
+                                                        }
+                                                    }
+                                                }
+                                            },
+                                            onReject = { fromUser ->
+                                                currentUserEmail?.let { currentEmail ->
+                                                    coroutineScope.launch {
+                                                        rejectFriendRequest(fromUser, currentEmail) { result ->
+                                                            result.fold(
+                                                                onSuccess = {
+                                                                    // Refresh all data after rejecting
+                                                                    coroutineScope.launch {
+                                                                        refreshAllData()
+                                                                    }
+                                                                },
+                                                                onFailure = { exception ->
+                                                                    error = exception.message ?: "Failed to reject friend request"
+                                                                }
+                                                            )
+                                                        }
+                                                    }
+                                                }
+                                            },
+                                            onCancel = { toUser ->
+                                                currentUserEmail?.let { currentEmail ->
+                                                    coroutineScope.launch {
+                                                        rejectFriendRequest(currentEmail, toUser) { result ->
+                                                            result.fold(
+                                                                onSuccess = {
+                                                                    // Refresh all data after canceling
+                                                                    coroutineScope.launch {
+                                                                        refreshAllData()
+                                                                    }
+                                                                },
+                                                                onFailure = { exception ->
+                                                                    error = exception.message ?: "Failed to cancel friend request"
+                                                                }
+                                                            )
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        )
+                                    }
                                 }
                             }
                         }
+                        
+                        PullRefreshIndicator(
+                            refreshing = isRefreshing,
+                            state = pullRefreshState,
+                            modifier = Modifier.align(Alignment.TopCenter)
+                        )
                     }
                 }
             }
