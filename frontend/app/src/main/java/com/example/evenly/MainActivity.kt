@@ -25,7 +25,7 @@ class MainActivity : ComponentActivity() {
         
         setContent {
             HelloWorldTheme {
-                DashboardScreen(
+                MainScreen(
                     userId = userId,
                     userName = userName,
                     onLogout = {

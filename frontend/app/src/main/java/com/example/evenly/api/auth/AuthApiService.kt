@@ -15,12 +15,12 @@ import retrofit2.http.*
  * Handles login, registration, logout, token refresh, and password recovery.
  */
 interface AuthApiService {
-    @POST("/api/auth/register/")
+    @POST("api/auth/register/")
     suspend fun register(@Body registerRequest: RegisterRequest): Response<RegisterResponse>
     
-    @POST("/api/auth/update-name/")
+    @POST("api/auth/update-name/")
     suspend fun updateName(@Body updateNameRequest: UpdateNameRequest): Response<UpdateNameResponse>
     
-    @POST("/api/auth/get-user/")
+    @POST("api/auth/get-user/")
     suspend fun getUser(@Body getUserRequest: GetUserRequest): Response<GetUserResponse>
 } 

@@ -2,10 +2,13 @@ package com.example.evenly
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.evenly.api.ApiRepository
@@ -78,90 +81,76 @@ fun DashboardScreen(
         isLoading = false
     }
     
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        topBar = {
-            TopAppBar(
-                title = { Text("Dashboard") },
-                actions = {
-                    IconButton(onClick = onLogout) {
-                        Text("Logout")
-                    }
-                }
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp)
+            .padding(top = 8.dp)
+    ) {
+        // Personalized header
+        if (userName != null) {
+            Text(
+                text = "Hi $userName! Ready to split Evenly?",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(vertical = 16.dp)
             )
         }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(horizontal = 16.dp)
-        ) {
-            // Personalized header
-            if (userName != null) {
-                Text(
-                    text = "Hi $userName! Ready to split Evenly?",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(vertical = 16.dp)
-                )
+        
+        if (isLoading) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
             }
-            
-            if (isLoading) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
-            } else if (error != null) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = "Error",
-                            style = MaterialTheme.typography.headlineSmall,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = error!!,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Button(onClick = { retryCounter++ }) {
-                            Text("Retry")
-                        }
+        } else if (error != null) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = "Error",
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = error!!,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(onClick = { retryCounter++ }) {
+                        Text("Retry")
                     }
                 }
-            } else {
-                dashboardData?.let { data ->
-                    LazyColumn(
-                        verticalArrangement = Arrangement.spacedBy(24.dp)
-                    ) {
-                        item {
-                            TotalSummaryCard(
-                                totalLent = data.lent.totalAmount,
-                                totalOwed = data.owed.totalAmount
-                            )
-                        }
-                        
-                        // Lent Section
-                        item {
-                            LentSection(
-                                expenses = data.lent.expenses
-                            )
-                        }
-                        
-                        // Owed Section
-                        item {
-                            OwedSection(
-                                splits = data.owed.splits
-                            )
-                        }
+            }
+        } else {
+            dashboardData?.let { data ->
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(24.dp)
+                ) {
+                    item {
+                        TotalSummaryCard(
+                            totalLent = data.lent.totalAmount,
+                            totalOwed = data.owed.totalAmount
+                        )
+                    }
+                    
+                    // Lent Section
+                    item {
+                        LentSection(
+                            expenses = data.lent.expenses
+                        )
+                    }
+                    
+                    // Owed Section
+                    item {
+                        OwedSection(
+                            splits = data.owed.splits
+                        )
                     }
                 }
             }
