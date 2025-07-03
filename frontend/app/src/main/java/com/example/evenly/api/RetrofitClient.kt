@@ -2,6 +2,8 @@ package com.example.evenly.api
 
 import com.example.evenly.api.auth.AuthApiService
 import com.example.evenly.api.dashboard.DashboardApiService
+import com.example.evenly.api.group.GroupApiService
+import com.example.evenly.api.group.models.Group
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -37,9 +39,12 @@ object RetrofitClient {
     
     // Dashboard API Service
     val dashboardApiService: DashboardApiService = retrofit.create(DashboardApiService::class.java)
+
+    // Group API Service
+    val groupApiService: GroupApiService = retrofit.create(GroupApiService::class.java)
     
     // Add more API services here as needed
     // Example:
     // val paymentApiService: PaymentApiService = retrofit.create(PaymentApiService::class.java)
     // val expenseApiService: ExpenseApiService = retrofit.create(ExpenseApiService::class.java)
-} 
+}
