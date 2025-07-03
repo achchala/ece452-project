@@ -23,6 +23,8 @@ fun DashboardScreen(
     userId: Int,
     userName: String? = null,
     onLogout: () -> Unit,
+    onCreateGroup: () -> Unit,
+    onViewGroups: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var dashboardData by remember { mutableStateOf<DashboardResponse?>(null) }
@@ -95,6 +97,14 @@ fun DashboardScreen(
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(vertical = 16.dp)
             )
+        },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = onCreateGroup,
+                containerColor = MaterialTheme.colorScheme.primary
+            ) {
+                Text("+", style = MaterialTheme.typography.headlineMedium)
+            }
         }
         
         if (isLoading) {
@@ -151,6 +161,40 @@ fun DashboardScreen(
                         OwedSection(
                             splits = data.owed.splits
                         )
+                }
+            } else {
+                dashboardData?.let { data ->
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(24.dp)
+                    ) {
+                        item {
+                            TotalSummaryCard(
+                                totalLent = data.lent.totalAmount,
+                                totalOwed = data.owed.totalAmount
+                            )
+                        }
+                        
+                        // Quick Actions Section
+                        item {
+                            QuickActionsSection(
+                                onCreateGroup = onCreateGroup,
+                                onViewGroups = onViewGroups
+                            )
+                        }
+                        
+                        // Lent Section
+                        item {
+                            LentSection(
+                                expenses = data.lent.expenses
+                            )
+                        }
+                        
+                        // Owed Section
+                        item {
+                            OwedSection(
+                                splits = data.owed.splits
+                            )
+                        }
                     }
                 }
             }
@@ -354,6 +398,83 @@ fun SplitCard(
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.error
             )
+        }
+    }
+}
+
+@Composable
+fun QuickActionsSection(
+    onCreateGroup: () -> Unit,
+    onViewGroups: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier.fillMaxWidth()) {
+        Text(
+            text = "Quick Actions",
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Card(
+                modifier = Modifier.weight(1f),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                ),
+                onClick = onCreateGroup
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "Create Group",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Start a new group",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
+            }
+            
+            Card(
+                modifier = Modifier.weight(1f),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer
+                ),
+                onClick = onViewGroups
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "My Groups",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "View all groups",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                }
+            }
         }
     }
 } 
