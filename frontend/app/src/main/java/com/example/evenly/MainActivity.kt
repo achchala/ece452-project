@@ -15,6 +15,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        // Initialize persistent group storage
+        GroupStorage.initialize(this)
+
         // Get the user name and ID from intent if passed
         val userName = intent.getStringExtra("user_name")
         val userId = intent.getIntExtra("user_id", -1) // Use -1 to indicate not provided

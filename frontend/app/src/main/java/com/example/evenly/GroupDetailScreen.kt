@@ -6,6 +6,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -13,108 +14,195 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.evenly.api.ApiRepository
+import com.example.evenly.api.friends.FriendRequest
 import com.example.evenly.api.group.models.Group
 import com.example.evenly.api.group.models.GroupMember
 import com.example.evenly.api.group.models.User as GroupUser
+import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GroupDetailScreen(
-    groupId: Int,
-    onNavigateBack: () -> Unit,
-    modifier: Modifier = Modifier
-) {
+fun GroupDetailScreen(groupId: Int, onNavigateBack: () -> Unit, modifier: Modifier = Modifier) {
     var group by remember { mutableStateOf<Group?>(null) }
     var showAddUserDialog by remember { mutableStateOf(false) }
-    
-    // Load group data
-    LaunchedEffect(groupId) {
-        group = GroupStorage.getGroups().find { it.id == groupId }
-    }
-    
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        topBar = {
-            TopAppBar(
-                title = { Text(group?.name ?: "Group Details") },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                }
-            )
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { showAddUserDialog = true },
-                containerColor = MaterialTheme.colorScheme.primary
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Add User")
+    var currentUserEmail by remember { mutableStateOf<String?>(null) }
+    var friends by remember { mutableStateOf<List<FriendRequest>>(emptyList()) }
+    var friendNames by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
+    var isLoadingFriends by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
+
+    val coroutineScope = rememberCoroutineScope()
+
+    // Function to fetch friend names
+    suspend fun fetchFriendNames(friends: List<FriendRequest>, currentUserEmail: String) {
+        val namesMap = mutableMapOf<String, String>()
+        for (friend in friends) {
+            val friendEmail =
+                    if (friend.from_user == currentUserEmail) friend.to_user else friend.from_user
+            try {
+                val userResult = ApiRepository.auth.getUserByEmail(friendEmail)
+                userResult.fold(
+                        onSuccess = { response ->
+                            response.user.name?.let { name -> namesMap[friendEmail] = name }
+                        },
+                        onFailure = { exception ->
+                            // Use email as fallback if name not available
+                            namesMap[friendEmail] = friendEmail
+                        }
+                )
+            } catch (e: Exception) {
+                // Use email as fallback if name not available
+                namesMap[friendEmail] = friendEmail
             }
         }
+        friendNames = namesMap
+    }
+
+    // Load group data and current user info
+    LaunchedEffect(groupId) {
+        group = GroupStorage.getGroups().find { it.id == groupId }
+
+        // Get current user email
+        val firebaseUser = FirebaseAuth.getInstance().currentUser
+        if (firebaseUser != null) {
+            try {
+                val userResult = ApiRepository.auth.getUser(firebaseUser.uid)
+                userResult.fold(
+                        onSuccess = {
+                            currentUserEmail = it.user.email
+                            // Load friends for this user
+                            isLoadingFriends = true
+                            val friendsResult = ApiRepository.friends.getFriends(it.user.email)
+                            friendsResult.fold(
+                                    onSuccess = { friendsList ->
+                                        friends = friendsList
+                                        // Fetch friend names
+                                        coroutineScope.launch {
+                                            fetchFriendNames(friendsList, it.user.email)
+                                        }
+                                    },
+                                    onFailure = { exception ->
+                                        error = "Failed to load friends: ${exception.message}"
+                                    }
+                            )
+                            isLoadingFriends = false
+                        },
+                        onFailure = { exception ->
+                            error = "Failed to get user info: ${exception.message}"
+                        }
+                )
+            } catch (e: Exception) {
+                error = "Exception getting user info: ${e.message}"
+            }
+        }
+    }
+
+    // Function to check if a friend is already in the group
+    fun isFriendInGroup(friendEmail: String): Boolean {
+        return group?.members?.any { member ->
+            // For now, we'll check by email. In a real implementation,
+            // you'd want to store user emails in the group members
+            member.user?.email == friendEmail
+        }
+                ?: false
+    }
+
+    // Function to get available friends (not already in group)
+    fun getAvailableFriends(): List<Pair<String, String>> {
+        return friends.mapNotNull { friend ->
+            val friendEmail =
+                    if (friend.from_user == currentUserEmail) friend.to_user else friend.from_user
+            val friendName = friendNames[friendEmail] ?: friendEmail
+            if (!isFriendInGroup(friendEmail)) {
+                Pair(friendEmail, friendName)
+            } else {
+                null
+            }
+        }
+    }
+
+    Scaffold(
+            modifier = modifier.fillMaxSize(),
+            topBar = {
+                TopAppBar(
+                        title = { Text(group?.name ?: "Group Details") },
+                        navigationIcon = {
+                            IconButton(onClick = onNavigateBack) {
+                                Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                            }
+                        }
+                )
+            },
+            floatingActionButton = {
+                FloatingActionButton(
+                        onClick = {
+                            if (getAvailableFriends().isNotEmpty()) {
+                                showAddUserDialog = true
+                            }
+                        },
+                        containerColor =
+                                if (getAvailableFriends().isNotEmpty())
+                                        MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                ) { Icon(Icons.Default.Add, contentDescription = "Add Friend") }
+            }
     ) { innerPadding ->
         if (group == null) {
             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("Group not found")
-            }
+                    modifier = Modifier.fillMaxSize().padding(innerPadding),
+                    contentAlignment = Alignment.Center
+            ) { Text("Group not found") }
         } else {
             LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                    modifier =
+                            Modifier.fillMaxSize()
+                                    .padding(innerPadding)
+                                    .padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 // Group Info Card
-                item {
-                    GroupInfoCard(group = group!!)
-                }
-                
+                item { GroupInfoCard(group = group!!) }
+
                 // Members Section
                 item {
                     Text(
-                        text = "Members (${group!!.members.size})",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold
+                            text = "Members (${group!!.members.size})",
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold
                     )
                 }
-                
+
                 // Member Cards
-                items(group!!.members) { member ->
-                    MemberCard(member = member)
-                }
-                
+                items(group!!.members) { member -> MemberCard(member = member) }
+
                 // Empty state for no members
                 if (group!!.members.isEmpty()) {
                     item {
                         Box(
-                            modifier = Modifier.fillMaxWidth(),
-                            contentAlignment = Alignment.Center
+                                modifier = Modifier.fillMaxWidth(),
+                                contentAlignment = Alignment.Center
                         ) {
                             Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 Icon(
-                                    Icons.Default.Person,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(48.dp),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                        Icons.Default.Person,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(48.dp),
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                                 Text(
-                                    text = "No members yet",
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        text = "No members yet",
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                                 Text(
-                                    text = "Tap the + button to add members",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        text = "Tap the + button to add friends",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                         }
@@ -123,63 +211,58 @@ fun GroupDetailScreen(
             }
         }
     }
-    
-    // Add User Dialog
+
+    // Add Friend Dialog
     if (showAddUserDialog) {
-        AddUserDialog(
-            onDismiss = { showAddUserDialog = false },
-            onAddUser = { userName, userEmail ->
-                addUserToGroup(group!!, userName, userEmail)
-                showAddUserDialog = false
-            }
+        AddFriendDialog(
+                availableFriends = getAvailableFriends(),
+                isLoading = isLoadingFriends,
+                onDismiss = { showAddUserDialog = false },
+                onAddFriend = { friendEmail, friendName ->
+                    addFriendToGroup(group!!, friendEmail, friendName)
+                    showAddUserDialog = false
+                }
         )
     }
 }
 
 @Composable
-fun GroupInfoCard(
-    group: Group,
-    modifier: Modifier = Modifier
-) {
+fun GroupInfoCard(group: Group, modifier: Modifier = Modifier) {
     Card(
-        modifier = modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            modifier = modifier.fillMaxWidth(),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
+        Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
             Text(
-                text = group.name,
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold
+                    text = group.name,
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold
             )
-            
+
             if (!group.description.isNullOrBlank()) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = group.description,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                        text = group.description,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            
+
             Spacer(modifier = Modifier.height(12.dp))
-            
+
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = "Created ${group.createdAt.substring(0, 10)}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                        text = "Created ${group.createdAt.substring(0, 10)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = "${group.members.size} members",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                        text = "${group.members.size} members",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -187,41 +270,44 @@ fun GroupInfoCard(
 }
 
 @Composable
-fun MemberCard(
-    member: GroupMember,
-    modifier: Modifier = Modifier
-) {
+fun MemberCard(member: GroupMember, modifier: Modifier = Modifier) {
     Card(
-        modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
+            modifier = modifier.fillMaxWidth(),
+            colors =
+                    CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
-                Icons.Default.Person,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary
+                    Icons.Default.Person,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary
             )
-            
+
             Spacer(modifier = Modifier.width(12.dp))
-            
+
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "User #${member.userId}",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Medium
+                        text = member.user?.name ?: "User #${member.userId}",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Medium
                 )
                 Text(
-                    text = "Joined ${member.joinedAt.substring(0, 10)}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                        text = member.user?.email ?: "Joined ${member.joinedAt.substring(0, 10)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                if (member.user?.email != null) {
+                    Text(
+                            text = "Joined ${member.joinedAt.substring(0, 10)}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
     }
@@ -229,61 +315,150 @@ fun MemberCard(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddUserDialog(
-    onDismiss: () -> Unit,
-    onAddUser: (String, String) -> Unit
+fun AddFriendDialog(
+        availableFriends: List<Pair<String, String>>,
+        isLoading: Boolean,
+        onDismiss: () -> Unit,
+        onAddFriend: (String, String) -> Unit
 ) {
-    var userName by remember { mutableStateOf("") }
-    var userEmail by remember { mutableStateOf("") }
-    
+    var selectedFriendEmail by remember { mutableStateOf<String?>(null) }
+
     AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Add User to Group") },
-        text = {
-            Column {
-                OutlinedTextField(
-                    value = userName,
-                    onValueChange = { userName = it },
-                    label = { Text("User Name") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = userEmail,
-                    onValueChange = { userEmail = it },
-                    label = { Text("Email") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = { onAddUser(userName, userEmail) },
-                enabled = userName.isNotBlank() && userEmail.isNotBlank()
-            ) {
-                Text("Add")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
-        }
+            onDismissRequest = onDismiss,
+            title = { Text("Add Friend to Group") },
+            text = {
+                if (isLoading) {
+                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                } else if (availableFriends.isEmpty()) {
+                    Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                                Icons.Default.Person,
+                                contentDescription = null,
+                                modifier = Modifier.size(48.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                                text = "No friends available",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                                text = "All your friends are already in this group",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                } else {
+                    LazyColumn(
+                            modifier = Modifier.heightIn(max = 300.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(availableFriends) { (email, name) ->
+                            FriendOptionCard(
+                                    email = email,
+                                    name = name,
+                                    isSelected = selectedFriendEmail == email,
+                                    onSelect = { selectedFriendEmail = email }
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                        onClick = {
+                            selectedFriendEmail?.let { email ->
+                                val friendName =
+                                        availableFriends.find { it.first == email }?.second ?: email
+                                onAddFriend(email, friendName)
+                            }
+                        },
+                        enabled =
+                                selectedFriendEmail != null &&
+                                        !isLoading &&
+                                        availableFriends.isNotEmpty()
+                ) { Text("Add Friend") }
+            },
+            dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
     )
 }
 
-// Function to add a user to a group
-fun addUserToGroup(group: Group, userName: String, userEmail: String) {
-    val newMember = GroupMember(
-        id = (System.currentTimeMillis() % 10000).toInt(),
-        userId = (System.currentTimeMillis() % 1000).toInt(),
-        groupId = group.id,
-        joinedAt = java.time.LocalDateTime.now().toString()
-    )
-    
-    val updatedGroup = group.copy(
-        members = group.members + newMember
-    )
-    
+@Composable
+fun FriendOptionCard(
+        email: String,
+        name: String,
+        isSelected: Boolean,
+        onSelect: () -> Unit,
+        modifier: Modifier = Modifier
+) {
+    Card(
+            modifier = modifier.fillMaxWidth(),
+            colors =
+                    CardDefaults.cardColors(
+                            containerColor =
+                                    if (isSelected) MaterialTheme.colorScheme.primaryContainer
+                                    else MaterialTheme.colorScheme.surfaceVariant
+                    ),
+            onClick = onSelect
+    ) {
+        Row(
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                    Icons.Default.Person,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary
+            )
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                        text = name,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Medium
+                )
+                Text(
+                        text = email,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            if (isSelected) {
+                Icon(
+                        Icons.Default.Check,
+                        contentDescription = "Selected",
+                        tint = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+    }
+}
+
+// Function to add a friend to a group
+fun addFriendToGroup(group: Group, friendEmail: String, friendName: String) {
+    val newMember =
+            GroupMember(
+                    id = (System.currentTimeMillis() % 10000).toInt(),
+                    userId = (System.currentTimeMillis() % 1000).toInt(),
+                    groupId = group.id,
+                    joinedAt = System.currentTimeMillis().toString(),
+                    user =
+                            GroupUser(
+                                    id = (System.currentTimeMillis() % 1000).toInt(),
+                                    name = friendName,
+                                    email = friendEmail
+                            )
+            )
+
+    val updatedGroup = group.copy(members = group.members + newMember)
+
     GroupStorage.updateGroup(updatedGroup)
-} 
+}
