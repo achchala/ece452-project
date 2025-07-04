@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:background="@android:color/white">
+
+    <TextView
+        android:id="@+id/welcome_to_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Welcome to"
+        android:textSize="24sp"
+        android:textStyle="normal"
+        android:textColor="@android:color/black"
+        android:gravity="center"
+        android:layout_marginBottom="8dp"/>
+
+    <TextView
+        android:id="@+id/evenly_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Evenly"
+        android:textSize="40sp"
+        android:textStyle="italic"
+        android:textColor="@color/purple_700"
+        android:fontFamily="@font/dancing_script"
+        android:gravity="center"/>
+
+</LinearLayout> 
