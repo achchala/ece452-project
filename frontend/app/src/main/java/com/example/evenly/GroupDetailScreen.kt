@@ -18,8 +18,8 @@ import com.example.evenly.api.ApiRepository
 import com.example.evenly.api.friends.FriendRequest
 import com.example.evenly.api.group.models.Group
 import com.example.evenly.api.group.models.GroupMember
-import com.example.evenly.api.group.models.User as GroupUser
 import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -34,6 +34,11 @@ fun GroupDetailScreen(groupId: Int, onNavigateBack: () -> Unit, modifier: Modifi
     var error by remember { mutableStateOf<String?>(null) }
 
     val coroutineScope = rememberCoroutineScope()
+
+    // Function to update error state
+    fun updateError(errorMessage: String?) {
+        error = errorMessage
+    }
 
     // Function to fetch friend names
     suspend fun fetchFriendNames(friends: List<FriendRequest>, currentUserEmail: String) {
@@ -62,39 +67,49 @@ fun GroupDetailScreen(groupId: Int, onNavigateBack: () -> Unit, modifier: Modifi
 
     // Load group data and current user info
     LaunchedEffect(groupId) {
-        group = GroupStorage.getGroups().find { it.id == groupId }
-
-        // Get current user email
+        // Load group from backend API
         val firebaseUser = FirebaseAuth.getInstance().currentUser
         if (firebaseUser != null) {
             try {
+                // Get current user info first
                 val userResult = ApiRepository.auth.getUser(firebaseUser.uid)
                 userResult.fold(
-                        onSuccess = {
-                            currentUserEmail = it.user.email
+                        onSuccess = { userResponse ->
+                            currentUserEmail = userResponse.user.email
+
+                            // Load group details from backend
+                            val groupResult = ApiRepository.group.getGroupById(groupId)
+                            groupResult.fold(
+                                    onSuccess = { groupData -> group = groupData },
+                                    onFailure = { exception ->
+                                        updateError("Failed to load group: ${exception.message}")
+                                    }
+                            )
+
                             // Load friends for this user
                             isLoadingFriends = true
-                            val friendsResult = ApiRepository.friends.getFriends(it.user.email)
+                            val friendsResult =
+                                    ApiRepository.friends.getFriends(userResponse.user.email)
                             friendsResult.fold(
                                     onSuccess = { friendsList ->
                                         friends = friendsList
                                         // Fetch friend names
                                         coroutineScope.launch {
-                                            fetchFriendNames(friendsList, it.user.email)
+                                            fetchFriendNames(friendsList, userResponse.user.email)
                                         }
                                     },
                                     onFailure = { exception ->
-                                        error = "Failed to load friends: ${exception.message}"
+                                        updateError("Failed to load friends: ${exception.message}")
                                     }
                             )
                             isLoadingFriends = false
                         },
                         onFailure = { exception ->
-                            error = "Failed to get user info: ${exception.message}"
+                            updateError("Failed to get user info: ${exception.message}")
                         }
                 )
             } catch (e: Exception) {
-                error = "Exception getting user info: ${e.message}"
+                updateError("Exception getting user info: ${e.message}")
             }
         }
     }
@@ -219,7 +234,10 @@ fun GroupDetailScreen(groupId: Int, onNavigateBack: () -> Unit, modifier: Modifi
                 isLoading = isLoadingFriends,
                 onDismiss = { showAddUserDialog = false },
                 onAddFriend = { friendEmail, friendName ->
-                    addFriendToGroup(group!!, friendEmail, friendName)
+                    addFriendToGroup(group!!, friendEmail, friendName, coroutineScope) {
+                            errorMessage ->
+                        updateError(errorMessage)
+                    }
                     showAddUserDialog = false
                 }
         )
@@ -443,22 +461,42 @@ fun FriendOptionCard(
 }
 
 // Function to add a friend to a group
-fun addFriendToGroup(group: Group, friendEmail: String, friendName: String) {
-    val newMember =
-            GroupMember(
-                    id = (System.currentTimeMillis() % 10000).toInt(),
-                    userId = (System.currentTimeMillis() % 1000).toInt(),
-                    groupId = group.id,
-                    joinedAt = System.currentTimeMillis().toString(),
-                    user =
-                            GroupUser(
-                                    id = (System.currentTimeMillis() % 1000).toInt(),
-                                    name = friendName,
-                                    email = friendEmail
+fun addFriendToGroup(
+        group: Group,
+        friendEmail: String,
+        friendName: String,
+        coroutineScope: CoroutineScope,
+        onError: (String) -> Unit
+) {
+    // Use backend API to add member to group
+    val firebaseUser = FirebaseAuth.getInstance().currentUser
+    if (firebaseUser != null) {
+        coroutineScope.launch {
+            try {
+                val result = ApiRepository.group.addMemberToGroup(group.id, friendEmail)
+                result.fold(
+                        onSuccess = {
+                            // Refresh the group data to show the new member
+                            val groupResult = ApiRepository.group.getGroupById(group.id)
+                            groupResult.fold(
+                                    onSuccess = { updatedGroup ->
+                                        // Update the group state
+                                        // Note: In a real app, you might want to use a state
+                                        // management solution
+                                        // For now, we'll just show a success message
+                                    },
+                                    onFailure = { exception ->
+                                        onError("Failed to refresh group: ${exception.message}")
+                                    }
                             )
-            )
-
-    val updatedGroup = group.copy(members = group.members + newMember)
-
-    GroupStorage.updateGroup(updatedGroup)
+                        },
+                        onFailure = { exception ->
+                            onError("Failed to add member: ${exception.message}")
+                        }
+                )
+            } catch (e: Exception) {
+                onError("Exception adding member: ${e.message}")
+            }
+        }
+    }
 }

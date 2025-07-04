@@ -39,21 +39,14 @@ fun GroupsScreen(
                 userResult.fold(
                         onSuccess = {
                             currentUserId = it.user.id
-                            // For now, use in-memory storage since backend group endpoints aren't
-                            // implemented yet
-                            // TODO: Uncomment when backend is ready
-                            /*
-                            val groupsResult = ApiRepository.group.getUserGroups(it.user.id)
+                            // Load groups from backend
+                            val groupsResult = ApiRepository.group.getUserGroups(firebaseUser.uid)
                             groupsResult.fold(
-                                onSuccess = { groupsList ->
-                                    groups = groupsList
-                                },
-                                onFailure = { exception ->
-                                    error = "Failed to load groups: ${exception.message}"
-                                }
+                                    onSuccess = { groupsList -> groups = groupsList },
+                                    onFailure = { exception ->
+                                        error = "Failed to load groups: ${exception.message}"
+                                    }
                             )
-                            */
-                            groups = GroupStorage.getGroups() // Use in-memory storage for now
                         },
                         onFailure = { exception ->
                             error = "Failed to get user info: ${exception.message}"
@@ -130,7 +123,7 @@ fun GroupsScreen(
                             )
                             Text(
                                     text =
-                                            "Create your first group to start splitting expenses with friends and family.\n\nNote: Backend group functionality is being implemented.",
+                                            "Create your first group to start splitting expenses with friends and family.",
                                     style = MaterialTheme.typography.bodyLarge,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                             )

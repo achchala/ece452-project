@@ -39,14 +39,14 @@ class GroupOperations:
         return group
     
     def get_group_by_id(self, group_id: int) -> Optional[Dict]:
-        """Get group by ID with creator information."""
-        select_query = "*, development_users(name)"
-        return self.client._execute_query(
+        """Get group by ID."""
+        result = self.client._execute_query(
             table_name=self.groups_table,
             operation='select',
-            filters={'id': group_id},
-            select_statement=select_query
+            filters={'id': group_id}
         )
+        # Return the first item since we're querying by unique ID
+        return result[0] if result else None
     
     def get_user_groups(self, user_id: int) -> Optional[List[Dict]]:
         """Get all groups that a user is a member of."""
@@ -73,13 +73,12 @@ class GroupOperations:
     
     def get_group_members(self, group_id: int) -> Optional[List[Dict]]:
         """Get all members of a group."""
-        select_query = "*, development_users(name, email)"
-        return self.client._execute_query(
+        result = self.client._execute_query(
             table_name=self.group_memberships_table,
             operation='select',
-            filters={'group_id': group_id},
-            select_statement=select_query
+            filters={'group_id': group_id}
         )
+        return result if result else []
     
     def add_member_to_group(self, group_id: int, user_id: int) -> Optional[Dict]:
         """Add a user to a group."""
@@ -137,8 +136,9 @@ class GroupOperations:
     
     def get_groups_created_by_user(self, user_id: int) -> Optional[List[Dict]]:
         """Get all groups created by a specific user."""
-        return self.client._execute_query(
+        result = self.client._execute_query(
             table_name=self.groups_table,
             operation='select',
             filters={'created_by': user_id}
-        ) 
+        )
+        return result if result else [] 

@@ -11,23 +11,19 @@ class ExpenseOperations:
         self.splits_table = self.client.get_table_name("splits")
     
     def get_user_lent_expenses(self, user_id: int) -> Optional[List[Dict]]:
-        """Get all expenses where the user is the creator, including splits and who owes them."""
-        select_query = "*, development_splits(*, development_users(name))"
+        """Get all expenses where the user is the creator."""
         return self.client._execute_query(
             table_name=self.expenses_table,
             operation='select',
-            filters={'created_by': user_id},
-            select_statement=select_query
+            filters={'created_by': user_id}
         )
     
     def get_user_owed_splits(self, user_id: int) -> Optional[List[Dict]]:
-        """Get all splits where the user owes money, including the expense title and the lender's name."""
-        select_query = "*, development_expenses(title, development_users(name))"
+        """Get all splits where the user owes money."""
         return self.client._execute_query(
             table_name=self.splits_table,
             operation='select',
-            filters={'userId': user_id},
-            select_statement=select_query
+            filters={'userId': user_id}
         )
     
     def get_expense_with_splits(self, expense_id: int) -> Optional[Dict]:
@@ -50,7 +46,7 @@ class ExpenseOperations:
             filters={'expenseId': expense_id}
         )
         
-        expense['splits'] = splits or []
+        expense['splits'] = splits if splits else []
         return expense
     
     def create_expense(self, title: str, total_amount: int, created_by: int) -> Optional[Dict]:

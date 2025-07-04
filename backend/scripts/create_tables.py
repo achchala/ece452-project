@@ -155,12 +155,104 @@ class SupabaseTableCreator:
         
         return self.execute_sql(sql)
     
+    def create_groups_table(self):
+        """Create groups table"""
+        table_name = self.get_table_name("groups")
+        sql = f"""
+        CREATE TABLE IF NOT EXISTS {table_name} (
+            id BIGSERIAL PRIMARY KEY,
+            name VARCHAR(255) NOT NULL,
+            description TEXT,
+            created_by BIGINT NOT NULL,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+            FOREIGN KEY (created_by) REFERENCES {self.get_table_name('users')}(id) ON DELETE CASCADE
+        );
+        
+        CREATE INDEX IF NOT EXISTS {table_name}_created_by_idx ON {table_name}(created_by);
+        """
+        
+        return self.execute_sql(sql)
+    
+    def create_group_memberships_table(self):
+        """Create group_memberships table"""
+        table_name = self.get_table_name("group_memberships")
+        sql = f"""
+        CREATE TABLE IF NOT EXISTS {table_name} (
+            id BIGSERIAL PRIMARY KEY,
+            group_id BIGINT NOT NULL,
+            user_id BIGINT NOT NULL,
+            joined_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+            FOREIGN KEY (group_id) REFERENCES {self.get_table_name('groups')}(id) ON DELETE CASCADE,
+            FOREIGN KEY (user_id) REFERENCES {self.get_table_name('users')}(id) ON DELETE CASCADE,
+            UNIQUE(group_id, user_id)
+        );
+        
+        CREATE INDEX IF NOT EXISTS {table_name}_group_id_idx ON {table_name}(group_id);
+        CREATE INDEX IF NOT EXISTS {table_name}_user_id_idx ON {table_name}(user_id);
+        """
+        
+        return self.execute_sql(sql)
+    
+    def create_expenses_table(self):
+        """Create expenses table"""
+        table_name = self.get_table_name("expenses")
+        sql = f"""
+        CREATE TABLE IF NOT EXISTS {table_name} (
+            id BIGSERIAL PRIMARY KEY,
+            title VARCHAR(255) NOT NULL,
+            total_amount INTEGER NOT NULL,
+            created_by BIGINT NOT NULL,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+            FOREIGN KEY (created_by) REFERENCES {self.get_table_name('users')}(id) ON DELETE CASCADE
+        );
+        
+        CREATE INDEX IF NOT EXISTS {table_name}_created_by_idx ON {table_name}(created_by);
+        """
+        
+        return self.execute_sql(sql)
+    
+    def create_splits_table(self):
+        """Create splits table"""
+        table_name = self.get_table_name("splits")
+        sql = f"""
+        CREATE TABLE IF NOT EXISTS {table_name} (
+            id BIGSERIAL PRIMARY KEY,
+            expenseId BIGINT NOT NULL,
+            userId BIGINT NOT NULL,
+            amount_owed INTEGER NOT NULL,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+            FOREIGN KEY (expenseId) REFERENCES {self.get_table_name('expenses')}(id) ON DELETE CASCADE,
+            FOREIGN KEY (userId) REFERENCES {self.get_table_name('users')}(id) ON DELETE CASCADE
+        );
+        
+        CREATE INDEX IF NOT EXISTS {table_name}_expense_id_idx ON {table_name}(expenseId);
+        CREATE INDEX IF NOT EXISTS {table_name}_user_id_idx ON {table_name}(userId);
+        """
+        
+        return self.execute_sql(sql)
+    
     def backup_and_recreate_all_tables(self):
         """Backup existing tables, delete them, and recreate them."""
         users_table = self.get_table_name("users")
         friend_requests_table = self.get_table_name("friend_requests")
+        groups_table = self.get_table_name("groups")
+        group_memberships_table = self.get_table_name("group_memberships")
+        expenses_table = self.get_table_name("expenses")
+        splits_table = self.get_table_name("splits")
         
         # Backup and delete in reverse dependency order
+        if not self.backup_and_delete_table(splits_table):
+            return False
+            
+        if not self.backup_and_delete_table(expenses_table):
+            return False
+            
+        if not self.backup_and_delete_table(group_memberships_table):
+            return False
+            
+        if not self.backup_and_delete_table(groups_table):
+            return False
+            
         if not self.backup_and_delete_table(friend_requests_table):
             return False
             
@@ -174,6 +266,18 @@ class SupabaseTableCreator:
         if not self.create_friend_requests_table():
             return False
         
+        if not self.create_groups_table():
+            return False
+        
+        if not self.create_group_memberships_table():
+            return False
+        
+        if not self.create_expenses_table():
+            return False
+        
+        if not self.create_splits_table():
+            return False
+        
         print("\n🎉 All tables backed up and recreated successfully!")
         return True
     
@@ -183,6 +287,18 @@ class SupabaseTableCreator:
             return False
         
         if not self.create_friend_requests_table():
+            return False
+        
+        if not self.create_groups_table():
+            return False
+        
+        if not self.create_group_memberships_table():
+            return False
+        
+        if not self.create_expenses_table():
+            return False
+        
+        if not self.create_splits_table():
             return False
         
         print("\n🎉 All tables created successfully!")

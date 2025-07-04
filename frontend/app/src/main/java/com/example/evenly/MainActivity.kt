@@ -15,8 +15,10 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        // Initialize persistent group storage
+        // Group storage is no longer needed as we use backend API
+        // Clear any existing local groups to ensure only backend groups are used
         GroupStorage.initialize(this)
+        GroupStorage.clearAllLocalGroups()
 
         // Get the user name and ID from intent if passed
         val userName = intent.getStringExtra("user_name")
