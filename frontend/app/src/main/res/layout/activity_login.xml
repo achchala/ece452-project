@@ -13,7 +13,9 @@
     <TextView
         android:text="@string/welcome_back"
         android:textSize="20sp"
-        android:textStyle="bold"
+        android:textStyle="italic"
+        android:textColor="@color/purple_700"
+        android:fontFamily="@font/dancing_script"
         android:gravity="center"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -78,5 +80,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/sign_up_to_get_started"
+        android:textStyle="italic"
+        android:textColor="@color/purple_700"
+        android:fontFamily="@font/dancing_script"
         android:layout_marginTop="20dp" />
 </LinearLayout>
