@@ -100,4 +100,29 @@ class ExpenseOperations:
                 "total_amount": total_owed,
                 "splits": owed_splits
             }
-        } 
+        }
+    
+    def update_expense(self, expense_id: int, data: Dict[str, Any]) -> Optional[Dict]:
+        """Update an expense."""
+        return self.client._execute_query(
+            table_name=self.expenses_table,
+            operation='update',
+            data=data,
+            filters={'id': expense_id}
+        )
+    
+    def delete_expense(self, expense_id: int) -> bool:
+        """Delete an expense and all its splits."""
+        # First delete all splits for this expense
+        self.client._execute_query(
+            table_name=self.splits_table,
+            operation='delete',
+            filters={'expenseId': expense_id}
+        )
+        
+        # Then delete the expense
+        return self.client._execute_query(
+            table_name=self.expenses_table,
+            operation='delete',
+            filters={'id': expense_id}
+        )
