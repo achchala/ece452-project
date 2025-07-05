@@ -32,7 +32,8 @@ class ExpensesView(viewsets.ViewSet):
         created_by = user.get("id")
         
         # Create the expense
-        expense = supabase.expenses.create_expense(title, total_amount, created_by)
+        group_id = request.data.get("groupId")
+        expense = supabase.expenses.create_expense(title, total_amount, created_by, group_id)
         
         if expense is None:
             return Response(
@@ -300,4 +301,46 @@ class ExpensesView(viewsets.ViewSet):
         user_id = user.get("id")
         dashboard_data = supabase.expenses.get_user_dashboard_data(user_id)
 
-        return Response(dashboard_data) 
+        return Response(dashboard_data)
+
+    @action(detail=False, methods=["post"], url_path="group-expenses")
+    def get_group_expenses(self, request):
+        """Get all expenses for a specific group."""
+        group_id = request.data.get("groupId")
+
+        if not group_id:
+            return Response(
+                {"error": "groupId is required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        expenses = supabase.expenses.get_group_expenses(group_id)
+
+        return Response({
+            "expenses": expenses
+        })
+
+    @action(detail=False, methods=["post"], url_path="user-group-expenses")
+    def get_user_group_expenses(self, request):
+        """Get all expenses for a user in a specific group."""
+        firebase_id = request.data.get("firebaseId")
+        group_id = request.data.get("groupId")
+
+        if not all([firebase_id, group_id]):
+            return Response(
+                {"error": "firebaseId and groupId are required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Get user by Firebase ID
+        user = supabase.users.get_by_firebase_id(firebase_id)
+        if not user:
+            return Response(
+                {"error": "User not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        user_id = user.get("id")
+        expenses = supabase.expenses.get_user_group_expenses(user_id, group_id)
+
+        return Response(expenses) 

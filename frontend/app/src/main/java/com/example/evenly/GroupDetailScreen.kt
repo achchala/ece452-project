@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.evenly.api.ApiRepository
+import com.example.evenly.api.expenses.models.Expense
 import com.example.evenly.api.friends.FriendRequest
 import com.example.evenly.api.group.models.Group
 import com.example.evenly.api.group.models.GroupMember
@@ -24,7 +25,12 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GroupDetailScreen(groupId: String, onNavigateBack: () -> Unit, modifier: Modifier = Modifier) {
+fun GroupDetailScreen(
+    groupId: String,
+    onNavigateBack: () -> Unit,
+    onAddExpense: (String, String, List<GroupMember>) -> Unit,
+    modifier: Modifier = Modifier
+) {
     var group by remember { mutableStateOf<Group?>(null) }
     var showAddUserDialog by remember { mutableStateOf(false) }
     var currentUserEmail by remember { mutableStateOf<String?>(null) }
@@ -32,6 +38,8 @@ fun GroupDetailScreen(groupId: String, onNavigateBack: () -> Unit, modifier: Mod
     var friendNames by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
     var isLoadingFriends by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
+    var expenses by remember { mutableStateOf<List<Expense>>(emptyList()) }
+    var isLoadingExpenses by remember { mutableStateOf(false) }
 
     val coroutineScope = rememberCoroutineScope()
 
@@ -65,6 +73,26 @@ fun GroupDetailScreen(groupId: String, onNavigateBack: () -> Unit, modifier: Mod
         friendNames = namesMap
     }
 
+    // Function to fetch group expenses
+    suspend fun fetchGroupExpenses(groupId: String) {
+        isLoadingExpenses = true
+        try {
+            val result = ApiRepository.expenses.getGroupExpenses(groupId)
+            result.fold(
+                onSuccess = { response ->
+                    expenses = response.expenses
+                },
+                onFailure = { exception ->
+                    updateError("Failed to load expenses: ${exception.message}")
+                }
+            )
+        } catch (e: Exception) {
+            updateError("Exception loading expenses: ${e.message}")
+        } finally {
+            isLoadingExpenses = false
+        }
+    }
+
     // Load group data and current user info
     LaunchedEffect(groupId) {
         // Load group from backend API
@@ -80,7 +108,13 @@ fun GroupDetailScreen(groupId: String, onNavigateBack: () -> Unit, modifier: Mod
                             // Load group details from backend
                             val groupResult = ApiRepository.group.getGroupById(groupId)
                             groupResult.fold(
-                                    onSuccess = { groupData -> group = groupData },
+                                    onSuccess = { groupData ->
+                                        group = groupData
+                                        // Load expenses for this group
+                                        coroutineScope.launch {
+                                            fetchGroupExpenses(groupId)
+                                        }
+                                    },
                                     onFailure = { exception ->
                                         updateError("Failed to load group: ${exception.message}")
                                     }
@@ -151,17 +185,35 @@ fun GroupDetailScreen(groupId: String, onNavigateBack: () -> Unit, modifier: Mod
                 )
             },
             floatingActionButton = {
-                FloatingActionButton(
+                Column {
+                    // Add Expense FAB
+                    FloatingActionButton(
+                        onClick = {
+                            group?.let { groupData ->
+                                onAddExpense(groupData.id, groupData.name, groupData.members)
+                            }
+                        },
+                        modifier = Modifier.padding(bottom = 8.dp),
+                        containerColor = MaterialTheme.colorScheme.primary
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = "Add Expense")
+                    }
+
+                    // Add Friend FAB
+                    FloatingActionButton(
                         onClick = {
                             if (getAvailableFriends().isNotEmpty()) {
                                 showAddUserDialog = true
                             }
                         },
                         containerColor =
-                                if (getAvailableFriends().isNotEmpty())
-                                        MaterialTheme.colorScheme.primary
-                                else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                ) { Icon(Icons.Default.Add, contentDescription = "Add Friend") }
+                            if (getAvailableFriends().isNotEmpty())
+                                MaterialTheme.colorScheme.secondary
+                            else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = "Add Friend")
+                    }
+                }
             }
     ) { innerPadding ->
         if (group == null) {
@@ -221,6 +273,72 @@ fun GroupDetailScreen(groupId: String, onNavigateBack: () -> Unit, modifier: Mod
                                 )
                             }
                         }
+                    }
+                }
+
+                // Expenses Section
+                item {
+                    Text(
+                        text = "Recent Expenses",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                // Loading state for expenses
+                if (isLoadingExpenses) {
+                    item {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant
+                            )
+                        ) {
+                            Box(
+                                modifier = Modifier.fillMaxWidth().padding(32.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator()
+                            }
+                        }
+                    }
+                } else if (expenses.isEmpty()) {
+                    // Empty state for no expenses
+                    item {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant
+                            )
+                        ) {
+                            Column(
+                                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.Add,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(48.dp),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = "No expenses yet",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = "Tap the receipt button to add your first expense",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                } else {
+                    // Display expenses
+                    items(expenses) { expense ->
+                        ExpenseCard(expense = expense)
                     }
                 }
             }
@@ -496,6 +614,57 @@ fun addFriendToGroup(
                 )
             } catch (e: Exception) {
                 onError("Exception adding member: ${e.message}")
+            }
+        }
+    }
+}
+
+@Composable
+fun ExpenseCard(expense: Expense, modifier: Modifier = Modifier) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    Icons.Default.Add,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = expense.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Text(
+                        text = "$${expense.totalAmount / 100.0}",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+                Text(
+                    text = expense.createdAt.substring(0, 10),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            if (expense.splits.isNotEmpty()) {
+                Text(
+                    text = "Split between ${expense.splits.size} people",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
     }

@@ -241,10 +241,9 @@ fun OwedSection(splits: List<Split>, modifier: Modifier = Modifier) {
 fun ExpenseCard(expense: Expense, modifier: Modifier = Modifier) {
     Card(
             modifier = modifier.fillMaxWidth(),
-            colors =
-                    CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant
-                    )
+            colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+            )
     ) {
         Column(
                 modifier = Modifier.fillMaxWidth().padding(12.dp),
@@ -303,10 +302,9 @@ fun ExpenseCard(expense: Expense, modifier: Modifier = Modifier) {
 fun SplitCard(split: Split, modifier: Modifier = Modifier) {
     Card(
             modifier = modifier.fillMaxWidth(),
-            colors =
-                    CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant
-                    )
+            colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+            )
     ) {
         Row(
                 modifier = Modifier.fillMaxWidth().padding(12.dp),

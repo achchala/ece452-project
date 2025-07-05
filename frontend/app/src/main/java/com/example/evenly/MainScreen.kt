@@ -23,6 +23,7 @@ sealed class Screen(val route: String, val title: String, val icon: ImageVector)
     object CreateGroup : Screen("create_group", "Create Group", Icons.Default.Home)
     object Groups : Screen("groups", "My Groups", Icons.Default.Home)
     object GroupDetail : Screen("group_detail", "Group Details", Icons.Default.Home)
+    object AddExpense : Screen("add_expense", "Add Expense", Icons.Default.Home)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -35,6 +36,8 @@ fun MainScreen(
 ) {
     var selectedScreen by remember { mutableStateOf<Screen>(Screen.Dashboard) }
     var selectedGroupId by remember { mutableStateOf<String?>(null) }
+    var selectedGroupName by remember { mutableStateOf<String?>(null) }
+    var selectedGroupMembers by remember { mutableStateOf<List<com.example.evenly.api.group.models.GroupMember>?>(null) }
 
     Scaffold(
             modifier = modifier,
@@ -126,8 +129,30 @@ fun MainScreen(
                     GroupDetailScreen(
                             groupId = groupId,
                             onNavigateBack = { selectedScreen = Screen.Groups },
+                            onAddExpense = { groupId, groupName, groupMembers ->
+                                selectedGroupId = groupId
+                                selectedGroupName = groupName
+                                selectedGroupMembers = groupMembers
+                                selectedScreen = Screen.AddExpense
+                            },
                             modifier = Modifier.padding(innerPadding)
                     )
+                }
+            }
+            Screen.AddExpense -> {
+                selectedGroupId?.let { groupId ->
+                    selectedGroupName?.let { groupName ->
+                        selectedGroupMembers?.let { groupMembers ->
+                            AddExpenseScreen(
+                                groupId = groupId,
+                                groupName = groupName,
+                                groupMembers = groupMembers,
+                                onNavigateBack = { selectedScreen = Screen.GroupDetail },
+                                onExpenseAdded = { selectedScreen = Screen.GroupDetail },
+                                modifier = Modifier.padding(innerPadding)
+                            )
+                        }
+                    }
                 }
             }
         }

@@ -202,11 +202,14 @@ class SupabaseTableCreator:
             title VARCHAR(255) NOT NULL,
             total_amount INTEGER NOT NULL,
             created_by UUID NOT NULL,
+            group_id UUID,
             created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-            FOREIGN KEY (created_by) REFERENCES {self.get_table_name('users')}(id) ON DELETE CASCADE
+            FOREIGN KEY (created_by) REFERENCES {self.get_table_name('users')}(id) ON DELETE CASCADE,
+            FOREIGN KEY (group_id) REFERENCES {self.get_table_name('groups')}(id) ON DELETE CASCADE
         );
         
         CREATE INDEX IF NOT EXISTS {table_name}_created_by_idx ON {table_name}(created_by);
+        CREATE INDEX IF NOT EXISTS {table_name}_group_id_idx ON {table_name}(group_id);
         """
         
         return self.execute_sql(sql)
