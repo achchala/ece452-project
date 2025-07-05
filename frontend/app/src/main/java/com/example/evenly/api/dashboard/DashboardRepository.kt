@@ -16,7 +16,7 @@ object DashboardRepository {
     /**
      * Get complete dashboard data for a user
      */
-    suspend fun getUserExpenses(userId: Int): Result<DashboardResponse> = withContext(Dispatchers.IO) {
+    suspend fun getUserExpenses(userId: String): Result<DashboardResponse> = withContext(Dispatchers.IO) {
         try {
             val response = RetrofitClient.dashboardApiService.getUserExpenses(userId)
             if (response.isSuccessful) {
@@ -32,7 +32,7 @@ object DashboardRepository {
     /**
      * Get only lent expenses for a user
      */
-    suspend fun getLentExpenses(userId: Int): Result<LentExpensesResponse> = withContext(Dispatchers.IO) {
+    suspend fun getLentExpenses(userId: String): Result<LentExpensesResponse> = withContext(Dispatchers.IO) {
         try {
             val response = RetrofitClient.dashboardApiService.getLentExpenses(userId)
             if (response.isSuccessful) {
@@ -48,7 +48,7 @@ object DashboardRepository {
     /**
      * Get only owed splits for a user
      */
-    suspend fun getOwedSplits(userId: Int): Result<OwedSplitsResponse> = withContext(Dispatchers.IO) {
+    suspend fun getOwedSplits(userId: String): Result<OwedSplitsResponse> = withContext(Dispatchers.IO) {
         try {
             val response = RetrofitClient.dashboardApiService.getOwedSplits(userId)
             if (response.isSuccessful) {

@@ -27,7 +27,7 @@ class UserOperations:
         )
         return result[0] if result else None
     
-    def get_by_id(self, user_id: int) -> Optional[Dict]:
+    def get_by_id(self, user_id: str) -> Optional[Dict]:
         """Get user by ID."""
         result = self.client._execute_query(
             table_name=self.table_name,
@@ -57,7 +57,7 @@ class UserOperations:
             filters={'firebase_id': firebase_id}
         )
     
-    def update(self, user_id: int, data: Dict[str, Any]) -> Optional[Dict]:
+    def update(self, user_id: str, data: Dict[str, Any]) -> Optional[Dict]:
         """Update user data and return the updated record."""
         return self.client._execute_query(
             table_name=self.table_name,
@@ -66,7 +66,7 @@ class UserOperations:
             filters={'id': user_id}
         )
     
-    def delete(self, user_id: int) -> bool:
+    def delete(self, user_id: str) -> bool:
         """Delete a user. Returns True if a row was deleted."""
         return self.client._execute_query(
             table_name=self.table_name,

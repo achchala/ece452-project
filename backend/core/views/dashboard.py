@@ -18,13 +18,6 @@ class DashboardView(viewsets.ViewSet):
             return Response(
                 {"error": "user_id is required"}, status=status.HTTP_400_BAD_REQUEST
             )
-        
-        try:
-            user_id = int(user_id)
-        except ValueError:
-            return Response(
-                {"error": "user_id must be a valid integer"}, status=status.HTTP_400_BAD_REQUEST
-            )
 
         dashboard_data = supabase.expenses.get_user_dashboard_data(user_id)
         
@@ -44,13 +37,6 @@ class DashboardView(viewsets.ViewSet):
         if not user_id:
             return Response(
                 {"error": "user_id is required"}, status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        try:
-            user_id = int(user_id)
-        except ValueError:
-            return Response(
-                {"error": "user_id must be a valid integer"}, status=status.HTTP_400_BAD_REQUEST
             )
 
         lent_expenses = supabase.expenses.get_user_lent_expenses(user_id)
@@ -72,20 +58,7 @@ class DashboardView(viewsets.ViewSet):
             return Response(
                 {"error": "user_id is required"}, status=status.HTTP_400_BAD_REQUEST
             )
-        
-        try:
-            user_id = int(user_id)
-        except ValueError:
-            return Response(
-                {"error": "user_id must be a valid integer"}, status=status.HTTP_400_BAD_REQUEST
-            )
 
         owed_splits = supabase.expenses.get_user_owed_splits(user_id)
         
-        if owed_splits is None:
-            return Response(
-                {"error": "Failed to retrieve owed splits"}, 
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-            
         return Response({"owed_splits": owed_splits}) 

@@ -31,7 +31,7 @@ enum class FriendsTab {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FriendsScreen(
-    userId: Int,
+    userId: String,
     modifier: Modifier = Modifier
 ) {
     var incomingRequests by remember { mutableStateOf<List<FriendRequest>>(emptyList()) }
@@ -825,7 +825,7 @@ fun FriendRequestCard(
     }
 }
 
-private suspend fun getCurrentUserEmail(userId: Int): String? {
+private suspend fun getCurrentUserEmail(userId: String): String? {
     val currentUser = FirebaseAuth.getInstance().currentUser
     Log.d("FriendsScreen", "getCurrentUserEmail called with userId: $userId")
     Log.d("FriendsScreen", "Current Firebase user: $currentUser")

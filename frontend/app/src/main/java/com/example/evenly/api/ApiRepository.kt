@@ -2,6 +2,7 @@ package com.example.evenly.api
 
 import com.example.evenly.api.auth.AuthRepository
 import com.example.evenly.api.dashboard.DashboardRepository
+import com.example.evenly.api.expenses.ExpenseRepository
 import com.example.evenly.api.friends.FriendsRepository
 import com.example.evenly.api.group.GroupRepository
 
@@ -22,8 +23,10 @@ object ApiRepository {
     // Group repository - static instance
     val group: GroupRepository = GroupRepository()
     
+    // Expense repository - static instance
+    val expenses: ExpenseRepository = ExpenseRepository(RetrofitClient.expenseApiService)
+    
     // Add more repositories here as needed
     // Example:
     // val payment: PaymentRepository = PaymentRepository()
-    // val expense: ExpenseRepository = ExpenseRepository()
 } 

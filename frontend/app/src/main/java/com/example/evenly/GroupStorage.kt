@@ -6,7 +6,8 @@ import com.example.evenly.api.group.models.Group
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 
-// Persistent storage for groups using SharedPreferences
+// DEPRECATED: This local storage is no longer used as groups are now managed by the backend API
+// This file is kept for reference and cleanup purposes only
 object GroupStorage {
     private const val PREFS_NAME = "group_storage"
     private const val GROUPS_KEY = "groups"
@@ -46,6 +47,11 @@ object GroupStorage {
 
     fun clear() {
         prefs?.edit()?.remove(GROUPS_KEY)?.apply()
+    }
+
+    // Clear all local groups - call this to remove any existing local groups
+    fun clearAllLocalGroups() {
+        clear()
     }
 
     private fun saveGroups(groups: List<Group>) {

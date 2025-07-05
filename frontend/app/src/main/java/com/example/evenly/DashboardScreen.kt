@@ -17,7 +17,7 @@ import com.google.firebase.auth.FirebaseAuth
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
-        userId: Int,
+        userId: String,
         userName: String? = null,
         onLogout: () -> Unit,
         onCreateGroup: () -> Unit,
@@ -35,7 +35,7 @@ fun DashboardScreen(
         dashboardData = null
 
         val id =
-                if (userId != -1) {
+                if (userId.isNotEmpty()) {
                     userId
                 } else {
                     val currentUser = FirebaseAuth.getInstance().currentUser
@@ -241,10 +241,9 @@ fun OwedSection(splits: List<Split>, modifier: Modifier = Modifier) {
 fun ExpenseCard(expense: Expense, modifier: Modifier = Modifier) {
     Card(
             modifier = modifier.fillMaxWidth(),
-            colors =
-                    CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant
-                    )
+            colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+            )
     ) {
         Column(
                 modifier = Modifier.fillMaxWidth().padding(12.dp),
@@ -303,10 +302,9 @@ fun ExpenseCard(expense: Expense, modifier: Modifier = Modifier) {
 fun SplitCard(split: Split, modifier: Modifier = Modifier) {
     Card(
             modifier = modifier.fillMaxWidth(),
-            colors =
-                    CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant
-                    )
+            colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+            )
     ) {
         Row(
                 modifier = Modifier.fillMaxWidth().padding(12.dp),
