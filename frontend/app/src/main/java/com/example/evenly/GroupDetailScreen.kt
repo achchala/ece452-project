@@ -188,158 +188,87 @@ fun GroupDetailScreen(
                 Column {
                     // Add Expense FAB
                     FloatingActionButton(
-                        onClick = {
-                            group?.let { groupData ->
-                                onAddExpense(groupData.id, groupData.name, groupData.members)
-                            }
-                        },
-                        modifier = Modifier.padding(bottom = 8.dp),
-                        containerColor = MaterialTheme.colorScheme.primary
+                            onClick = {
+                                group?.let { groupData ->
+                                    onAddExpense(groupData.id, groupData.name, groupData.members)
+                                }
+                            },
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.size(56.dp)
                     ) {
                         Icon(Icons.Default.Add, contentDescription = "Add Expense")
                     }
-
+                    Spacer(modifier = Modifier.height(8.dp))
                     // Add Friend FAB
                     FloatingActionButton(
-                        onClick = {
-                            if (getAvailableFriends().isNotEmpty()) {
-                                showAddUserDialog = true
-                            }
-                        },
-                        containerColor =
-                            if (getAvailableFriends().isNotEmpty())
-                                MaterialTheme.colorScheme.secondary
-                            else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                            onClick = { showAddUserDialog = true },
+                            containerColor = MaterialTheme.colorScheme.secondary,
+                            contentColor = MaterialTheme.colorScheme.onSecondary,
+                            modifier = Modifier.size(56.dp)
                     ) {
-                        Icon(Icons.Default.Add, contentDescription = "Add Friend")
+                        Icon(Icons.Default.Person, contentDescription = "Add Friend")
                     }
                 }
             }
     ) { innerPadding ->
-        if (group == null) {
-            Box(
-                    modifier = Modifier.fillMaxSize().padding(innerPadding),
-                    contentAlignment = Alignment.Center
-            ) { Text("Group not found") }
-        } else {
-            LazyColumn(
-                    modifier =
-                            Modifier.fillMaxSize()
-                                    .padding(innerPadding)
-                                    .padding(horizontal = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                // Group Info Card
-                item { GroupInfoCard(group = group!!) }
+        LazyColumn(
+                modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
+                        .padding(horizontal = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            // Group Info Card
+            group?.let { groupData ->
+                item {
+                    GroupInfoCard(group = groupData)
+                }
+            }
 
-                // Members Section
+            // Members Section
+            group?.members?.let { members ->
                 item {
                     Text(
-                            text = "Members (${group!!.members.size})",
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold
+                            text = "Members",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(vertical = 8.dp)
                     )
                 }
+                items(members) { member ->
+                    MemberCard(member = member)
+                }
+            }
 
-                // Member Cards
-                items(group!!.members) { member -> MemberCard(member = member) }
+            // Expenses Section
+            item {
+                Text(
+                        text = "Expenses",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(vertical = 8.dp)
+                )
+            }
 
-                // Empty state for no members
-                if (group!!.members.isEmpty()) {
-                    item {
-                        Box(
-                                modifier = Modifier.fillMaxWidth(),
-                                contentAlignment = Alignment.Center
-                        ) {
-                            Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Icon(
-                                        Icons.Default.Person,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(48.dp),
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Text(
-                                        text = "No members yet",
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Text(
-                                        text = "Tap the + button to add friends",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
+            if (isLoadingExpenses) {
+                item {
+                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
                     }
                 }
-
-                // Expenses Section
+            } else if (expenses.isEmpty()) {
                 item {
                     Text(
-                        text = "Recent Expenses",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold
+                            text = "No expenses yet.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(vertical = 16.dp)
                     )
                 }
-
-                // Loading state for expenses
-                if (isLoadingExpenses) {
-                    item {
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant
-                            )
-                        ) {
-                            Box(
-                                modifier = Modifier.fillMaxWidth().padding(32.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                CircularProgressIndicator()
-                            }
-                        }
-                    }
-                } else if (expenses.isEmpty()) {
-                    // Empty state for no expenses
-                    item {
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant
-                            )
-                        ) {
-                            Column(
-                                modifier = Modifier.fillMaxWidth().padding(16.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Icon(
-                                    Icons.Default.Add,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(48.dp),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Text(
-                                    text = "No expenses yet",
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Text(
-                                    text = "Tap the receipt button to add your first expense",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                    }
-                } else {
-                    // Display expenses
-                    items(expenses) { expense ->
-                        ExpenseCard(expense = expense)
-                    }
+            } else {
+                items(expenses) { expense ->
+                    ExpenseCard(expense = expense)
                 }
             }
         }
@@ -366,25 +295,25 @@ fun GroupDetailScreen(
 fun GroupInfoCard(group: Group, modifier: Modifier = Modifier) {
     Card(
             modifier = modifier.fillMaxWidth(),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+        Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
             Text(
                     text = group.name,
-                    style = MaterialTheme.typography.headlineMedium,
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
             )
 
             if (!group.description.isNullOrBlank()) {
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(6.dp))
                 Text(
                         text = group.description,
-                        style = MaterialTheme.typography.bodyLarge,
+                        style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -412,38 +341,37 @@ fun MemberCard(member: GroupMember, modifier: Modifier = Modifier) {
             colors =
                     CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.surfaceVariant
-                    )
+                    ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Row(
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                modifier = Modifier.fillMaxWidth().padding(10.dp),
                 verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
                     Icons.Default.Person,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
             )
 
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(10.dp))
 
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                        text = member.user?.name ?: "User #${member.userId}",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Medium
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                            text = member.user?.name ?: "User #${member.userId}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium
+                    )
+                    // Note: We need to pass the group's creatorId to this component
+                    // For now, we'll show admin status in a different way
+                }
                 Text(
                         text = member.user?.email ?: "Joined ${member.joinedAt.substring(0, 10)}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                if (member.user?.email != null) {
-                    Text(
-                            text = "Joined ${member.joinedAt.substring(0, 10)}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
             }
         }
     }
@@ -625,11 +553,12 @@ fun ExpenseCard(expense: Expense, modifier: Modifier = Modifier) {
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            modifier = Modifier.fillMaxWidth().padding(10.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -638,18 +567,19 @@ fun ExpenseCard(expense: Expense, modifier: Modifier = Modifier) {
                 Icon(
                     Icons.Default.Add,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(18.dp)
                 )
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(10.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = expense.title,
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Medium
                     )
                     Text(
                         text = "$${expense.totalAmount / 100.0}",
-                        style = MaterialTheme.typography.bodyLarge,
+                        style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.primary
                     )
                 }

@@ -20,8 +20,8 @@ import androidx.compose.ui.unit.dp
 sealed class Screen(val route: String, val title: String, val icon: ImageVector) {
     object Dashboard : Screen("dashboard", "Dashboard", Icons.Default.Home)
     object Friends : Screen("friends", "Friends", Icons.Default.Person)
+    object Groups : Screen("groups", "Groups", Icons.Default.Person)
     object CreateGroup : Screen("create_group", "Create Group", Icons.Default.Home)
-    object Groups : Screen("groups", "My Groups", Icons.Default.Home)
     object GroupDetail : Screen("group_detail", "Group Details", Icons.Default.Home)
     object AddExpense : Screen("add_expense", "Add Expense", Icons.Default.Home)
 }
@@ -61,7 +61,7 @@ fun MainScreen(
             },
             bottomBar = {
                 // Only show bottom navigation for main screens
-                if (selectedScreen in listOf(Screen.Dashboard, Screen.Friends)) {
+                if (selectedScreen in listOf(Screen.Dashboard, Screen.Friends, Screen.Groups)) {
                     NavigationBar {
                         NavigationBarItem(
                                 icon = {
@@ -85,6 +85,17 @@ fun MainScreen(
                                 selected = selectedScreen == Screen.Friends,
                                 onClick = { selectedScreen = Screen.Friends }
                         )
+                        NavigationBarItem(
+                                icon = {
+                                    Icon(
+                                            Screen.Groups.icon,
+                                            contentDescription = Screen.Groups.title
+                                    )
+                                },
+                                label = { Text(Screen.Groups.title) },
+                                selected = selectedScreen == Screen.Groups,
+                                onClick = { selectedScreen = Screen.Groups }
+                        )
                     }
                 }
             }
@@ -96,7 +107,6 @@ fun MainScreen(
                         userName = userName,
                         onLogout = onLogout,
                         onCreateGroup = { selectedScreen = Screen.CreateGroup },
-                        onViewGroups = { selectedScreen = Screen.Groups },
                         modifier = Modifier.padding(innerPadding)
                 )
             }
@@ -115,7 +125,6 @@ fun MainScreen(
             }
             Screen.Groups -> {
                 GroupsScreen(
-                        onNavigateBack = { selectedScreen = Screen.Dashboard },
                         onCreateGroup = { selectedScreen = Screen.CreateGroup },
                         onGroupClick = { groupId ->
                             selectedGroupId = groupId

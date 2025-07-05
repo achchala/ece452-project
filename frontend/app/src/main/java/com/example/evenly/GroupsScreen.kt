@@ -20,7 +20,6 @@ import com.google.firebase.auth.FirebaseAuth
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GroupsScreen(
-        onNavigateBack: () -> Unit,
         onCreateGroup: () -> Unit,
         onGroupClick: (String) -> Unit,
         modifier: Modifier = Modifier
@@ -63,16 +62,6 @@ fun GroupsScreen(
 
     Scaffold(
             modifier = modifier.fillMaxSize(),
-            topBar = {
-                TopAppBar(
-                        title = { Text("My Groups") },
-                        navigationIcon = {
-                            IconButton(onClick = onNavigateBack) {
-                                Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                            }
-                        }
-                )
-            },
             floatingActionButton = {
                 FloatingActionButton(
                         onClick = onCreateGroup,
@@ -149,53 +138,60 @@ fun GroupsScreen(
 @Composable
 fun GroupCard(group: Group, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Card(
-            modifier = modifier.fillMaxWidth(),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-            onClick = onClick
+        modifier = modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        onClick = onClick
     ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-            Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.Top
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                            text = group.name,
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold
+                        text = group.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold
                     )
-                    if (!group.description.isNullOrBlank()) {
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                                text = group.description,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-                Icon(
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Icon(
                         Icons.Default.Person,
-                        contentDescription = null,
+                        contentDescription = "Members",
+                        modifier = Modifier.size(16.dp),
                         tint = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = "${group.members.size}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(start = 2.dp)
+                    )
+                }
+                if (!group.description.isNullOrBlank()) {
+                    Text(
+                        text = group.description,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1
+                    )
+                }
+                Text(
+                    text = "Created ${group.createdAt.substring(0, 10)}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
+            IconButton(
+                onClick = onClick,
+                modifier = Modifier.padding(start = 8.dp)
             ) {
-                Text(
-                        text = "${group.members.size} members",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                        text = "Created ${group.createdAt.substring(0, 10)}", // Show just the date
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                Icon(
+                    imageVector = Icons.Default.ArrowBack,
+                    contentDescription = "View Group",
+                    modifier = Modifier.size(20.dp),
+                    tint = MaterialTheme.colorScheme.primary
                 )
             }
         }
