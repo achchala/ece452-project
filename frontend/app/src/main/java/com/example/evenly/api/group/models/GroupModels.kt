@@ -17,24 +17,24 @@ data class CreateGroupResponse(
 )
 
 data class Group(
-        @SerializedName("id") val id: Int,
+        @SerializedName("id") val id: String,
         @SerializedName("name") val name: String,
         @SerializedName("description") val description: String?,
-        @SerializedName("creator_id") val creatorId: Int,
+        @SerializedName("creator_id") val creatorId: String,
         @SerializedName("created_at") val createdAt: String,
         @SerializedName("members") val members: List<GroupMember> = emptyList()
 )
 
 data class GroupMember(
-        @SerializedName("id") val id: Int,
-        @SerializedName("user_id") val userId: Int,
-        @SerializedName("group_id") val groupId: Int,
+        @SerializedName("id") val id: String,
+        @SerializedName("user_id") val userId: String,
+        @SerializedName("group_id") val groupId: String,
         @SerializedName("joined_at") val joinedAt: String,
         @SerializedName("user") val user: User? = null
 )
 
 data class User(
-        @SerializedName("id") val id: Int,
+        @SerializedName("id") val id: String,
         @SerializedName("name") val name: String,
         @SerializedName("email") val email: String
 )

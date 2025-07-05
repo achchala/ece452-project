@@ -79,7 +79,7 @@ class GroupRepository {
      * @param groupId The ID of the group to fetch
      * @return Result containing either the group or an exception
      */
-    suspend fun getGroupById(groupId: Int): Result<Group> =
+    suspend fun getGroupById(groupId: String): Result<Group> =
             withContext(Dispatchers.IO) {
                 try {
                     val response = groupApiService.getGroupById(groupId)
@@ -102,7 +102,7 @@ class GroupRepository {
      * @param memberEmail The email of the member to add
      * @return Result containing either success or an exception
      */
-    suspend fun addMemberToGroup(groupId: Int, memberEmail: String): Result<Unit> =
+    suspend fun addMemberToGroup(groupId: String, memberEmail: String): Result<Unit> =
             withContext(Dispatchers.IO) {
                 try {
                     val firebaseUser =

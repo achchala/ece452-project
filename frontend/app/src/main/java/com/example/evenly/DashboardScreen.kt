@@ -17,7 +17,7 @@ import com.google.firebase.auth.FirebaseAuth
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
-        userId: Int,
+        userId: String,
         userName: String? = null,
         onLogout: () -> Unit,
         onCreateGroup: () -> Unit,
@@ -35,7 +35,7 @@ fun DashboardScreen(
         dashboardData = null
 
         val id =
-                if (userId != -1) {
+                if (userId.isNotEmpty()) {
                     userId
                 } else {
                     val currentUser = FirebaseAuth.getInstance().currentUser

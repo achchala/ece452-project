@@ -28,13 +28,13 @@ sealed class Screen(val route: String, val title: String, val icon: ImageVector)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
-        userId: Int,
+        userId: String,
         userName: String? = null,
         onLogout: () -> Unit,
         modifier: Modifier = Modifier
 ) {
     var selectedScreen by remember { mutableStateOf<Screen>(Screen.Dashboard) }
-    var selectedGroupId by remember { mutableStateOf<Int?>(null) }
+    var selectedGroupId by remember { mutableStateOf<String?>(null) }
 
     Scaffold(
             modifier = modifier,

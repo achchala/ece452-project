@@ -23,7 +23,7 @@ interface FriendsApiService {
 }
 
 data class FriendRequest(
-    val id: Int,
+    val id: String,
     val from_user: String,
     val to_user: String,
     val request_completed: Boolean,

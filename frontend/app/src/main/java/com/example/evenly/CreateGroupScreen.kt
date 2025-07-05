@@ -22,7 +22,7 @@ import com.google.firebase.auth.FirebaseAuth
 @Composable
 fun CreateGroupScreen(
         onNavigateBack: () -> Unit,
-        onGroupCreated: (Int) -> Unit,
+        onGroupCreated: (String) -> Unit,
         modifier: Modifier = Modifier
 ) {
         var groupName by remember { mutableStateOf("") }

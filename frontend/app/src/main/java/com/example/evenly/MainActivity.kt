@@ -22,7 +22,7 @@ class MainActivity : ComponentActivity() {
 
         // Get the user name and ID from intent if passed
         val userName = intent.getStringExtra("user_name")
-        val userId = intent.getIntExtra("user_id", -1) // Use -1 to indicate not provided
+        val userId = intent.getStringExtra("user_id") ?: ""
 
         setContent {
             HelloWorldTheme {

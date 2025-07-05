@@ -21,11 +21,11 @@ interface GroupApiService {
     suspend fun getUserGroups(@Body request: GetUserGroupsRequest): Response<List<Group>>
 
     @GET("/api/groups/{groupId}/detail/")
-    suspend fun getGroupById(@retrofit2.http.Path("groupId") groupId: Int): Response<Group>
+    suspend fun getGroupById(@retrofit2.http.Path("groupId") groupId: String): Response<Group>
 
     @POST("/api/groups/{groupId}/add-member/")
     suspend fun addMemberToGroup(
-            @retrofit2.http.Path("groupId") groupId: Int,
+            @retrofit2.http.Path("groupId") groupId: String,
             @Body request: AddMemberRequest
     ): Response<Unit>
 }

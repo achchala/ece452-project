@@ -123,7 +123,7 @@ class SupabaseTableCreator:
         table_name = self.get_table_name("users")
         sql = f"""
         CREATE TABLE IF NOT EXISTS {table_name} (
-            id BIGSERIAL PRIMARY KEY,
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
             email VARCHAR(254) UNIQUE NOT NULL,
             date_joined TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
             firebase_id VARCHAR(255) UNIQUE NOT NULL,
@@ -141,7 +141,7 @@ class SupabaseTableCreator:
         table_name = self.get_table_name("friend_requests")
         sql = f"""
         CREATE TABLE IF NOT EXISTS {table_name} (
-            id BIGSERIAL PRIMARY KEY,
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
             from_user VARCHAR(100) NOT NULL,
             to_user VARCHAR(100) NOT NULL,
             request_completed BOOLEAN DEFAULT FALSE,
@@ -160,10 +160,10 @@ class SupabaseTableCreator:
         table_name = self.get_table_name("groups")
         sql = f"""
         CREATE TABLE IF NOT EXISTS {table_name} (
-            id BIGSERIAL PRIMARY KEY,
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
             name VARCHAR(255) NOT NULL,
             description TEXT,
-            created_by BIGINT NOT NULL,
+            created_by UUID NOT NULL,
             created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
             FOREIGN KEY (created_by) REFERENCES {self.get_table_name('users')}(id) ON DELETE CASCADE
         );
@@ -178,9 +178,9 @@ class SupabaseTableCreator:
         table_name = self.get_table_name("group_memberships")
         sql = f"""
         CREATE TABLE IF NOT EXISTS {table_name} (
-            id BIGSERIAL PRIMARY KEY,
-            group_id BIGINT NOT NULL,
-            user_id BIGINT NOT NULL,
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            group_id UUID NOT NULL,
+            user_id UUID NOT NULL,
             joined_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
             FOREIGN KEY (group_id) REFERENCES {self.get_table_name('groups')}(id) ON DELETE CASCADE,
             FOREIGN KEY (user_id) REFERENCES {self.get_table_name('users')}(id) ON DELETE CASCADE,
@@ -198,10 +198,10 @@ class SupabaseTableCreator:
         table_name = self.get_table_name("expenses")
         sql = f"""
         CREATE TABLE IF NOT EXISTS {table_name} (
-            id BIGSERIAL PRIMARY KEY,
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
             title VARCHAR(255) NOT NULL,
             total_amount INTEGER NOT NULL,
-            created_by BIGINT NOT NULL,
+            created_by UUID NOT NULL,
             created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
             FOREIGN KEY (created_by) REFERENCES {self.get_table_name('users')}(id) ON DELETE CASCADE
         );
@@ -216,9 +216,9 @@ class SupabaseTableCreator:
         table_name = self.get_table_name("splits")
         sql = f"""
         CREATE TABLE IF NOT EXISTS {table_name} (
-            id BIGSERIAL PRIMARY KEY,
-            expenseId BIGINT NOT NULL,
-            userId BIGINT NOT NULL,
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            expenseId UUID NOT NULL,
+            userId UUID NOT NULL,
             amount_owed INTEGER NOT NULL,
             created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
             FOREIGN KEY (expenseId) REFERENCES {self.get_table_name('expenses')}(id) ON DELETE CASCADE,

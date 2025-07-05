@@ -48,12 +48,12 @@ data class OwedSplitsResponse(
  * Expense data model
  */
 data class Expense(
-    val id: Long,
+    val id: String,
     val title: String,
     @SerializedName("total_amount")
     val totalAmount: Long,
     @SerializedName("created_by")
-    val createdBy: Long,
+    val createdBy: String,
     @SerializedName("created_at")
     val createdAt: String,
     @SerializedName("development_splits")
@@ -81,11 +81,11 @@ data class Debtor(
  * Split data model
  */
 data class Split(
-    val id: Long,
+    val id: String,
     @SerializedName("expenseId")
-    val expenseId: Long,
+    val expenseId: String,
     @SerializedName("userId")
-    val userId: Long,
+    val userId: String,
     @SerializedName("amount_owed")
     val amountOwed: Long,
     @SerializedName("development_expenses")

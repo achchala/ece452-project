@@ -24,7 +24,7 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GroupDetailScreen(groupId: Int, onNavigateBack: () -> Unit, modifier: Modifier = Modifier) {
+fun GroupDetailScreen(groupId: String, onNavigateBack: () -> Unit, modifier: Modifier = Modifier) {
     var group by remember { mutableStateOf<Group?>(null) }
     var showAddUserDialog by remember { mutableStateOf(false) }
     var currentUserEmail by remember { mutableStateOf<String?>(null) }

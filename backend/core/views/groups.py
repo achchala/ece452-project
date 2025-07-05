@@ -97,14 +97,13 @@ class GroupsView(viewsets.ViewSet):
     @action(detail=True, methods=["get"], url_path="detail")
     def get_group(self, request, pk=None):
         """Get a specific group by ID."""
-        try:
-            group_id = int(pk)
-        except ValueError:
+        if not pk:
             return Response(
-                {"error": "Invalid group ID"},
+                {"error": "Group ID is required"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        group_id = pk
         group = supabase.groups.get_group_by_id(group_id)
 
         if group is None:
@@ -130,13 +129,13 @@ class GroupsView(viewsets.ViewSet):
     @action(detail=True, methods=["put"], url_path="update")
     def update_group(self, request, pk=None):
         """Update a group."""
-        try:
-            group_id = int(pk)
-        except ValueError:
+        if not pk:
             return Response(
-                {"error": "Invalid group ID"},
+                {"error": "Group ID is required"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+
+        group_id = pk
 
         name = request.data.get("name")
         description = request.data.get("description")
@@ -189,13 +188,13 @@ class GroupsView(viewsets.ViewSet):
     @action(detail=True, methods=["delete"], url_path="delete")
     def delete_group(self, request, pk=None):
         """Delete a group."""
-        try:
-            group_id = int(pk)
-        except ValueError:
+        if not pk:
             return Response(
-                {"error": "Invalid group ID"},
+                {"error": "Group ID is required"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+
+        group_id = pk
 
         success = supabase.groups.delete_group(group_id)
 
@@ -210,13 +209,13 @@ class GroupsView(viewsets.ViewSet):
     @action(detail=True, methods=["post"], url_path="add-member")
     def add_member(self, request, pk=None):
         """Add a member to a group."""
-        try:
-            group_id = int(pk)
-        except ValueError:
+        if not pk:
             return Response(
-                {"error": "Invalid group ID"},
+                {"error": "Group ID is required"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+
+        group_id = pk
 
         firebase_id = request.data.get("firebaseId")
         member_email = request.data.get("memberEmail")
@@ -256,13 +255,13 @@ class GroupsView(viewsets.ViewSet):
     @action(detail=True, methods=["post"], url_path="remove-member")
     def remove_member(self, request, pk=None):
         """Remove a member from a group."""
-        try:
-            group_id = int(pk)
-        except ValueError:
+        if not pk:
             return Response(
-                {"error": "Invalid group ID"},
+                {"error": "Group ID is required"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+
+        group_id = pk
 
         firebase_id = request.data.get("firebaseId")
         member_email = request.data.get("memberEmail")
@@ -302,13 +301,13 @@ class GroupsView(viewsets.ViewSet):
     @action(detail=True, methods=["get"], url_path="members")
     def get_members(self, request, pk=None):
         """Get all members of a group."""
-        try:
-            group_id = int(pk)
-        except ValueError:
+        if not pk:
             return Response(
-                {"error": "Invalid group ID"},
+                {"error": "Group ID is required"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+
+        group_id = pk
 
         members = supabase.groups.get_group_members(group_id)
 

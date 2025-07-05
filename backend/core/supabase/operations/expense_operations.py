@@ -10,7 +10,7 @@ class ExpenseOperations:
         self.expenses_table = self.client.get_table_name("expenses")
         self.splits_table = self.client.get_table_name("splits")
     
-    def get_user_lent_expenses(self, user_id: int) -> Optional[List[Dict]]:
+    def get_user_lent_expenses(self, user_id: str) -> Optional[List[Dict]]:
         """Get all expenses where the user is the creator."""
         return self.client._execute_query(
             table_name=self.expenses_table,
@@ -18,7 +18,7 @@ class ExpenseOperations:
             filters={'created_by': user_id}
         )
     
-    def get_user_owed_splits(self, user_id: int) -> Optional[List[Dict]]:
+    def get_user_owed_splits(self, user_id: str) -> Optional[List[Dict]]:
         """Get all splits where the user owes money."""
         return self.client._execute_query(
             table_name=self.splits_table,
@@ -49,7 +49,7 @@ class ExpenseOperations:
         expense['splits'] = splits if splits else []
         return expense
     
-    def create_expense(self, title: str, total_amount: int, created_by: int) -> Optional[Dict]:
+    def create_expense(self, title: str, total_amount: int, created_by: str) -> Optional[Dict]:
         """Create a new expense."""
         data = {
             "title": title,
@@ -62,7 +62,7 @@ class ExpenseOperations:
             data=data
         )
     
-    def create_split(self, expense_id: int, user_id: int, amount_owed: int) -> Optional[Dict]:
+    def create_split(self, expense_id: int, user_id: str, amount_owed: int) -> Optional[Dict]:
         """Create a new split for an expense."""
         data = {
             "expenseId": expense_id,
@@ -75,7 +75,7 @@ class ExpenseOperations:
             data=data
         )
     
-    def get_user_dashboard_data(self, user_id: int) -> Dict[str, Any]:
+    def get_user_dashboard_data(self, user_id: str) -> Dict[str, Any]:
         """Get dashboard data for a user including lent and owed amounts."""
         # Get expenses where user lent money
         lent_expenses = self.get_user_lent_expenses(user_id) or []

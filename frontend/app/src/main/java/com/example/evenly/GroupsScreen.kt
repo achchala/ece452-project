@@ -22,13 +22,13 @@ import com.google.firebase.auth.FirebaseAuth
 fun GroupsScreen(
         onNavigateBack: () -> Unit,
         onCreateGroup: () -> Unit,
-        onGroupClick: (Int) -> Unit,
+        onGroupClick: (String) -> Unit,
         modifier: Modifier = Modifier
 ) {
     var groups by remember { mutableStateOf<List<Group>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
-    var currentUserId by remember { mutableStateOf<Int?>(null) }
+    var currentUserId by remember { mutableStateOf<String?>(null) }
 
     // Get current user info and load groups
     LaunchedEffect(Unit) {
