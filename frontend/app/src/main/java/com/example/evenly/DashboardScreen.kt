@@ -17,11 +17,10 @@ import com.google.firebase.auth.FirebaseAuth
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
-        userId: Int,
+        userId: String,
         userName: String? = null,
         onLogout: () -> Unit,
         onCreateGroup: () -> Unit,
-        onViewGroups: () -> Unit,
         modifier: Modifier = Modifier
 ) {
     var dashboardData by remember { mutableStateOf<DashboardResponse?>(null) }
@@ -35,7 +34,7 @@ fun DashboardScreen(
         dashboardData = null
 
         val id =
-                if (userId != -1) {
+                if (userId.isNotEmpty()) {
                     userId
                 } else {
                     val currentUser = FirebaseAuth.getInstance().currentUser
@@ -138,12 +137,7 @@ fun DashboardScreen(
                         }
 
                         // Quick Actions Section
-                        item {
-                            QuickActionsSection(
-                                    onCreateGroup = onCreateGroup,
-                                    onViewGroups = onViewGroups
-                            )
-                        }
+                        item { QuickActionsSection(onCreateGroup = onCreateGroup) }
 
                         // Lent Section
                         item { LentSection(expenses = data.lent.expenses) }
@@ -241,10 +235,9 @@ fun OwedSection(splits: List<Split>, modifier: Modifier = Modifier) {
 fun ExpenseCard(expense: Expense, modifier: Modifier = Modifier) {
     Card(
             modifier = modifier.fillMaxWidth(),
-            colors =
-                    CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant
-                    )
+            colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+            )
     ) {
         Column(
                 modifier = Modifier.fillMaxWidth().padding(12.dp),
@@ -303,10 +296,9 @@ fun ExpenseCard(expense: Expense, modifier: Modifier = Modifier) {
 fun SplitCard(split: Split, modifier: Modifier = Modifier) {
     Card(
             modifier = modifier.fillMaxWidth(),
-            colors =
-                    CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant
-                    )
+            colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+            )
     ) {
         Row(
                 modifier = Modifier.fillMaxWidth().padding(12.dp),
@@ -340,7 +332,6 @@ fun SplitCard(split: Split, modifier: Modifier = Modifier) {
 @Composable
 fun QuickActionsSection(
         onCreateGroup: () -> Unit,
-        onViewGroups: () -> Unit,
         modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
@@ -351,62 +342,30 @@ fun QuickActionsSection(
         )
         Spacer(modifier = Modifier.height(16.dp))
 
-        Row(
+        Card(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                colors =
+                        CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer
+                        ),
+                onClick = onCreateGroup
         ) {
-            Card(
-                    modifier = Modifier.weight(1f),
-                    colors =
-                            CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.primaryContainer
-                            ),
-                    onClick = onCreateGroup
+            Column(
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Column(
-                        modifier = Modifier.fillMaxWidth().padding(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                            text = "Create Group",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                            text = "Start a new group",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                }
-            }
-
-            Card(
-                    modifier = Modifier.weight(1f),
-                    colors =
-                            CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.secondaryContainer
-                            ),
-                    onClick = onViewGroups
-            ) {
-                Column(
-                        modifier = Modifier.fillMaxWidth().padding(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                            text = "My Groups",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                            text = "View all groups",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer
-                    )
-                }
+                Text(
+                        text = "Create Group",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                        text = "Start a new group",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
             }
         }
     }

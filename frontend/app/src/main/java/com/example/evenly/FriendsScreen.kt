@@ -31,7 +31,7 @@ enum class FriendsTab {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FriendsScreen(
-    userId: Int,
+    userId: String,
     modifier: Modifier = Modifier
 ) {
     var incomingRequests by remember { mutableStateOf<List<FriendRequest>>(emptyList()) }
@@ -238,14 +238,23 @@ fun FriendsScreen(
         }
     }
 
-    Box(modifier = modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp)
-                .padding(top = 8.dp)
-        ) {
-            // Tab Row
+    Scaffold(
+        modifier = modifier.fillMaxSize(),
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = { showAddFriendDialog = true },
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Send Friend Request"
+                )
+            }
+        }
+    ) { innerPadding ->
+        Column(modifier = Modifier.fillMaxSize()) {
+            // Tab Row at the very top, outside all padding
             TabRow(
                 selectedTabIndex = selectedTab.ordinal,
                 modifier = Modifier.fillMaxWidth()
@@ -263,319 +272,312 @@ fun FriendsScreen(
                     modifier = Modifier.weight(1f)
                 )
             }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Content based on selected tab
-            when (selectedTab) {
-                FriendsTab.FRIENDS -> {
-                    val pullRefreshState = rememberPullRefreshState(
-                        refreshing = isRefreshing,
-                        onRefresh = {
-                            currentUserEmail?.let { email ->
-                                coroutineScope.launch {
-                                    isRefreshing = true
-                                    refreshAllData()
-                                    isRefreshing = false
-                                }
-                            }
-                        }
-                    )
-                    
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .pullRefresh(pullRefreshState)
-                    ) {
-                        if (isLoading || isLoadingFriendNames) {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                CircularProgressIndicator()
-                            }
-                        } else if (error != null) {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text(
-                                        text = "Error",
-                                        style = MaterialTheme.typography.headlineSmall,
-                                        color = MaterialTheme.colorScheme.error
-                                    )
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    Text(
-                                        text = error!!,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.error
-                                    )
-                                    Spacer(modifier = Modifier.height(16.dp))
-                                    Button(
-                                        onClick = {
-                                            isLoading = true
-                                            error = null
-                                            currentUserEmail?.let { email ->
-                                                coroutineScope.launch {
-                                                    isRefreshing = true
-                                                    refreshAllData()
-                                                    isRefreshing = false
-                                                }
-                                            }
-                                        }
-                                    ) {
-                                        Text("Retry")
-                                    }
-                                }
-                            }
-                        } else {
-                            if (currentFriends.isEmpty()) {
-                                LazyColumn(
-                                    modifier = Modifier.fillMaxSize(),
-                                    verticalArrangement = Arrangement.Center
-                                ) {
-                                    item {
-                                        Box(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            Column(
-                                                horizontalAlignment = Alignment.CenterHorizontally
-                                            ) {
-                                                Icon(
-                                                    imageVector = Icons.Default.Person,
-                                                    contentDescription = null,
-                                                    modifier = Modifier.size(64.dp),
-                                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                                )
-                                                Spacer(modifier = Modifier.height(16.dp))
-                                                Text(
-                                                    text = "No friends yet",
-                                                    style = MaterialTheme.typography.headlineSmall,
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                )
-                                                Spacer(modifier = Modifier.height(8.dp))
-                                                Text(
-                                                    text = "Add friends to start splitting expenses",
-                                                    style = MaterialTheme.typography.bodyMedium,
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                )
-                                            }
+            // Main content with padding
+            Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp)
+                        .padding(top = 8.dp)
+                ) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    // Content based on selected tab
+                    when (selectedTab) {
+                        FriendsTab.FRIENDS -> {
+                            val pullRefreshState = rememberPullRefreshState(
+                                refreshing = isRefreshing,
+                                onRefresh = {
+                                    currentUserEmail?.let { email ->
+                                        coroutineScope.launch {
+                                            isRefreshing = true
+                                            refreshAllData()
+                                            isRefreshing = false
                                         }
                                     }
                                 }
-                            } else {
-                                LazyColumn(
-                                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                                    modifier = Modifier.fillMaxSize()
-                                ) {
-                                    items(currentFriends) { friend ->
-                                        FriendCard(
-                                            friend = friend,
-                                            currentUserEmail = currentUserEmail,
-                                            friendName = friendNames[if (friend.from_user == currentUserEmail) friend.to_user else friend.from_user]
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                        
-                        PullRefreshIndicator(
-                            refreshing = isRefreshing,
-                            state = pullRefreshState,
-                            modifier = Modifier.align(Alignment.TopCenter)
-                        )
-                    }
-                }
-                FriendsTab.REQUESTS -> {
-                    val pullRefreshState = rememberPullRefreshState(
-                        refreshing = isRefreshing,
-                        onRefresh = {
-                            currentUserEmail?.let { email ->
-                                coroutineScope.launch {
-                                    isRefreshing = true
-                                    refreshAllData()
-                                    isRefreshing = false
-                                }
-                            }
-                        }
-                    )
-                    
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .pullRefresh(pullRefreshState)
-                    ) {
-                        if (isLoading || isLoadingFriendNames) {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                CircularProgressIndicator()
-                            }
-                        } else if (error != null) {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text(
-                                        text = "Error",
-                                        style = MaterialTheme.typography.headlineSmall,
-                                        color = MaterialTheme.colorScheme.error
-                                    )
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    Text(
-                                        text = error!!,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.error
-                                    )
-                                    Spacer(modifier = Modifier.height(16.dp))
-                                    Button(
-                                        onClick = {
-                                            isLoading = true
-                                            error = null
-                                            currentUserEmail?.let { email ->
-                                                coroutineScope.launch {
-                                                    isRefreshing = true
-                                                    refreshAllData()
-                                                    isRefreshing = false
-                                                }
-                                            }
-                                        }
-                                    ) {
-                                        Text("Retry")
-                                    }
-                                }
-                            }
-                        } else {
-                            val allRequests = incomingRequests.map { it to true } + outgoingRequests.map { it to false }
+                            )
                             
-                            if (allRequests.isEmpty()) {
-                                LazyColumn(
-                                    modifier = Modifier.fillMaxSize(),
-                                    verticalArrangement = Arrangement.Center
-                                ) {
-                                    item {
-                                        Box(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            Column(
-                                                horizontalAlignment = Alignment.CenterHorizontally
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .pullRefresh(pullRefreshState)
+                            ) {
+                                if (isLoading || isLoadingFriendNames) {
+                                    Box(
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        CircularProgressIndicator()
+                                    }
+                                } else if (error != null) {
+                                    Box(
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                            Text(
+                                                text = "Error",
+                                                style = MaterialTheme.typography.headlineSmall,
+                                                color = MaterialTheme.colorScheme.error
+                                            )
+                                            Spacer(modifier = Modifier.height(8.dp))
+                                            Text(
+                                                text = error!!,
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                color = MaterialTheme.colorScheme.error
+                                            )
+                                            Spacer(modifier = Modifier.height(16.dp))
+                                            Button(
+                                                onClick = {
+                                                    isLoading = true
+                                                    error = null
+                                                    currentUserEmail?.let { email ->
+                                                        coroutineScope.launch {
+                                                            isRefreshing = true
+                                                            refreshAllData()
+                                                            isRefreshing = false
+                                                        }
+                                                    }
+                                                }
                                             ) {
-                                                Icon(
-                                                    imageVector = Icons.Default.Person,
-                                                    contentDescription = null,
-                                                    modifier = Modifier.size(48.dp),
-                                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                                )
-                                                Spacer(modifier = Modifier.height(8.dp))
-                                                Text(
-                                                    text = "No friend requests",
-                                                    style = MaterialTheme.typography.bodyMedium,
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                Text("Retry")
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    if (currentFriends.isEmpty()) {
+                                        LazyColumn(
+                                            modifier = Modifier.fillMaxSize(),
+                                            verticalArrangement = Arrangement.Center
+                                        ) {
+                                            item {
+                                                Box(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    contentAlignment = Alignment.Center
+                                                ) {
+                                                    Column(
+                                                        horizontalAlignment = Alignment.CenterHorizontally
+                                                    ) {
+                                                        Icon(
+                                                            imageVector = Icons.Default.Person,
+                                                            contentDescription = null,
+                                                            modifier = Modifier.size(64.dp),
+                                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                                        )
+                                                        Spacer(modifier = Modifier.height(16.dp))
+                                                        Text(
+                                                            text = "No friends yet",
+                                                            style = MaterialTheme.typography.headlineSmall,
+                                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                        )
+                                                        Spacer(modifier = Modifier.height(8.dp))
+                                                        Text(
+                                                            text = "Add friends to start splitting expenses",
+                                                            style = MaterialTheme.typography.bodyMedium,
+                                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    } else {
+                                        LazyColumn(
+                                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                                            modifier = Modifier.fillMaxSize()
+                                        ) {
+                                            items(currentFriends) { friend ->
+                                                FriendCard(
+                                                    friend = friend,
+                                                    currentUserEmail = currentUserEmail,
+                                                    friendName = friendNames[if (friend.from_user == currentUserEmail) friend.to_user else friend.from_user]
                                                 )
                                             }
                                         }
                                     }
                                 }
-                            } else {
-                                LazyColumn(
-                                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                                    modifier = Modifier.fillMaxSize()
-                                ) {
-                                    items(allRequests) { (request, isIncoming) ->
-                                        FriendRequestCard(
-                                            request = request,
-                                            isIncoming = isIncoming,
-                                            onAccept = { fromUser ->
-                                                currentUserEmail?.let { currentEmail ->
-                                                    coroutineScope.launch {
-                                                        acceptFriendRequest(fromUser, currentEmail) { result ->
-                                                            result.fold(
-                                                                onSuccess = {
-                                                                    // Refresh all data after accepting
-                                                                    coroutineScope.launch {
-                                                                        refreshAllData()
-                                                                    }
-                                                                },
-                                                                onFailure = { exception ->
-                                                                    error = exception.message ?: "Failed to accept friend request"
-                                                                }
-                                                            )
+                                
+                                PullRefreshIndicator(
+                                    refreshing = isRefreshing,
+                                    state = pullRefreshState,
+                                    modifier = Modifier.align(Alignment.TopCenter)
+                                )
+                            }
+                        }
+                        FriendsTab.REQUESTS -> {
+                            val pullRefreshState = rememberPullRefreshState(
+                                refreshing = isRefreshing,
+                                onRefresh = {
+                                    currentUserEmail?.let { email ->
+                                        coroutineScope.launch {
+                                            isRefreshing = true
+                                            refreshAllData()
+                                            isRefreshing = false
+                                        }
+                                    }
+                                }
+                            )
+                            
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .pullRefresh(pullRefreshState)
+                            ) {
+                                if (isLoading || isLoadingFriendNames) {
+                                    Box(
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        CircularProgressIndicator()
+                                    }
+                                } else if (error != null) {
+                                    Box(
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                            Text(
+                                                text = "Error",
+                                                style = MaterialTheme.typography.headlineSmall,
+                                                color = MaterialTheme.colorScheme.error
+                                            )
+                                            Spacer(modifier = Modifier.height(8.dp))
+                                            Text(
+                                                text = error!!,
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                color = MaterialTheme.colorScheme.error
+                                            )
+                                            Spacer(modifier = Modifier.height(16.dp))
+                                            Button(
+                                                onClick = {
+                                                    isLoading = true
+                                                    error = null
+                                                    currentUserEmail?.let { email ->
+                                                        coroutineScope.launch {
+                                                            isRefreshing = true
+                                                            refreshAllData()
+                                                            isRefreshing = false
                                                         }
                                                     }
                                                 }
-                                            },
-                                            onReject = { fromUser ->
-                                                currentUserEmail?.let { currentEmail ->
-                                                    coroutineScope.launch {
-                                                        rejectFriendRequest(fromUser, currentEmail) { result ->
-                                                            result.fold(
-                                                                onSuccess = {
-                                                                    // Refresh all data after rejecting
-                                                                    coroutineScope.launch {
-                                                                        refreshAllData()
-                                                                    }
-                                                                },
-                                                                onFailure = { exception ->
-                                                                    error = exception.message ?: "Failed to reject friend request"
-                                                                }
-                                                            )
-                                                        }
-                                                    }
-                                                }
-                                            },
-                                            onCancel = { toUser ->
-                                                currentUserEmail?.let { currentEmail ->
-                                                    coroutineScope.launch {
-                                                        rejectFriendRequest(currentEmail, toUser) { result ->
-                                                            result.fold(
-                                                                onSuccess = {
-                                                                    // Refresh all data after canceling
-                                                                    coroutineScope.launch {
-                                                                        refreshAllData()
-                                                                    }
-                                                                },
-                                                                onFailure = { exception ->
-                                                                    error = exception.message ?: "Failed to cancel friend request"
-                                                                }
-                                                            )
-                                                        }
+                                            ) {
+                                                Text("Retry")
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    val allRequests = incomingRequests.map { it to true } + outgoingRequests.map { it to false }
+                                    
+                                    if (allRequests.isEmpty()) {
+                                        LazyColumn(
+                                            modifier = Modifier.fillMaxSize(),
+                                            verticalArrangement = Arrangement.Center
+                                        ) {
+                                            item {
+                                                Box(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    contentAlignment = Alignment.Center
+                                                ) {
+                                                    Column(
+                                                        horizontalAlignment = Alignment.CenterHorizontally
+                                                    ) {
+                                                        Icon(
+                                                            imageVector = Icons.Default.Person,
+                                                            contentDescription = null,
+                                                            modifier = Modifier.size(48.dp),
+                                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                                        )
+                                                        Spacer(modifier = Modifier.height(8.dp))
+                                                        Text(
+                                                            text = "No friend requests",
+                                                            style = MaterialTheme.typography.bodyMedium,
+                                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                        )
                                                     }
                                                 }
                                             }
-                                        )
+                                        }
+                                    } else {
+                                        LazyColumn(
+                                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                                            modifier = Modifier.fillMaxSize()
+                                        ) {
+                                            items(allRequests) { (request, isIncoming) ->
+                                                FriendRequestCard(
+                                                    request = request,
+                                                    isIncoming = isIncoming,
+                                                    onAccept = { fromUser ->
+                                                        currentUserEmail?.let { currentEmail ->
+                                                            coroutineScope.launch {
+                                                                acceptFriendRequest(fromUser, currentEmail) { result ->
+                                                                    result.fold(
+                                                                        onSuccess = {
+                                                                            // Refresh all data after accepting
+                                                                            coroutineScope.launch {
+                                                                                refreshAllData()
+                                                                            }
+                                                                        },
+                                                                        onFailure = { exception ->
+                                                                            error = exception.message ?: "Failed to accept friend request"
+                                                                        }
+                                                                    )
+                                                                }
+                                                            }
+                                                        }
+                                                    },
+                                                    onReject = { fromUser ->
+                                                        currentUserEmail?.let { currentEmail ->
+                                                            coroutineScope.launch {
+                                                                rejectFriendRequest(fromUser, currentEmail) { result ->
+                                                                    result.fold(
+                                                                        onSuccess = {
+                                                                            // Refresh all data after rejecting
+                                                                            coroutineScope.launch {
+                                                                                refreshAllData()
+                                                                            }
+                                                                        },
+                                                                        onFailure = { exception ->
+                                                                            error = exception.message ?: "Failed to reject friend request"
+                                                                        }
+                                                                    )
+                                                                }
+                                                            }
+                                                        }
+                                                    },
+                                                    onCancel = { toUser ->
+                                                        currentUserEmail?.let { currentEmail ->
+                                                            coroutineScope.launch {
+                                                                rejectFriendRequest(currentEmail, toUser) { result ->
+                                                                    result.fold(
+                                                                        onSuccess = {
+                                                                            // Refresh all data after canceling
+                                                                            coroutineScope.launch {
+                                                                                refreshAllData()
+                                                                            }
+                                                                        },
+                                                                        onFailure = { exception ->
+                                                                            error = exception.message ?: "Failed to cancel friend request"
+                                                                        }
+                                                                    )
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                )
+                                            }
+                                        }
                                     }
                                 }
+                                
+                                PullRefreshIndicator(
+                                    refreshing = isRefreshing,
+                                    state = pullRefreshState,
+                                    modifier = Modifier.align(Alignment.TopCenter)
+                                )
                             }
                         }
-                        
-                        PullRefreshIndicator(
-                            refreshing = isRefreshing,
-                            state = pullRefreshState,
-                            modifier = Modifier.align(Alignment.TopCenter)
-                        )
                     }
                 }
             }
-        }
-
-        // Floating Action Button
-        FloatingActionButton(
-            onClick = { showAddFriendDialog = true },
-            containerColor = MaterialTheme.colorScheme.primary,
-            contentColor = MaterialTheme.colorScheme.onPrimary,
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(16.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Default.Add,
-                contentDescription = "Send Friend Request"
-            )
         }
     }
 
@@ -825,7 +827,7 @@ fun FriendRequestCard(
     }
 }
 
-private suspend fun getCurrentUserEmail(userId: Int): String? {
+private suspend fun getCurrentUserEmail(userId: String): String? {
     val currentUser = FirebaseAuth.getInstance().currentUser
     Log.d("FriendsScreen", "getCurrentUserEmail called with userId: $userId")
     Log.d("FriendsScreen", "Current Firebase user: $currentUser")

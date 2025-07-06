@@ -15,16 +15,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.evenly.api.ApiRepository
+import com.example.evenly.api.expenses.models.Expense
 import com.example.evenly.api.friends.FriendRequest
 import com.example.evenly.api.group.models.Group
 import com.example.evenly.api.group.models.GroupMember
-import com.example.evenly.api.group.models.User as GroupUser
 import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GroupDetailScreen(groupId: Int, onNavigateBack: () -> Unit, modifier: Modifier = Modifier) {
+fun GroupDetailScreen(
+    groupId: String,
+    onNavigateBack: () -> Unit,
+    onAddExpense: (String, String, List<GroupMember>) -> Unit,
+    modifier: Modifier = Modifier
+) {
     var group by remember { mutableStateOf<Group?>(null) }
     var showAddUserDialog by remember { mutableStateOf(false) }
     var currentUserEmail by remember { mutableStateOf<String?>(null) }
@@ -32,8 +38,15 @@ fun GroupDetailScreen(groupId: Int, onNavigateBack: () -> Unit, modifier: Modifi
     var friendNames by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
     var isLoadingFriends by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
+    var expenses by remember { mutableStateOf<List<Expense>>(emptyList()) }
+    var isLoadingExpenses by remember { mutableStateOf(false) }
 
     val coroutineScope = rememberCoroutineScope()
+
+    // Function to update error state
+    fun updateError(errorMessage: String?) {
+        error = errorMessage
+    }
 
     // Function to fetch friend names
     suspend fun fetchFriendNames(friends: List<FriendRequest>, currentUserEmail: String) {
@@ -60,41 +73,77 @@ fun GroupDetailScreen(groupId: Int, onNavigateBack: () -> Unit, modifier: Modifi
         friendNames = namesMap
     }
 
+    // Function to fetch group expenses
+    suspend fun fetchGroupExpenses(groupId: String) {
+        isLoadingExpenses = true
+        try {
+            val result = ApiRepository.expenses.getGroupExpenses(groupId)
+            result.fold(
+                onSuccess = { response ->
+                    expenses = response.expenses
+                },
+                onFailure = { exception ->
+                    updateError("Failed to load expenses: ${exception.message}")
+                }
+            )
+        } catch (e: Exception) {
+            updateError("Exception loading expenses: ${e.message}")
+        } finally {
+            isLoadingExpenses = false
+        }
+    }
+
     // Load group data and current user info
     LaunchedEffect(groupId) {
-        group = GroupStorage.getGroups().find { it.id == groupId }
-
-        // Get current user email
+        // Load group from backend API
         val firebaseUser = FirebaseAuth.getInstance().currentUser
         if (firebaseUser != null) {
             try {
+                // Get current user info first
                 val userResult = ApiRepository.auth.getUser(firebaseUser.uid)
                 userResult.fold(
-                        onSuccess = {
-                            currentUserEmail = it.user.email
+                        onSuccess = { userResponse ->
+                            currentUserEmail = userResponse.user.email
+
+                            // Load group details from backend
+                            val groupResult = ApiRepository.group.getGroupById(groupId)
+                            groupResult.fold(
+                                    onSuccess = { groupData ->
+                                        group = groupData
+                                        // Load expenses for this group
+                                        coroutineScope.launch {
+                                            fetchGroupExpenses(groupId)
+                                        }
+                                    },
+                                    onFailure = { exception ->
+                                        updateError("Failed to load group: ${exception.message}")
+                                    }
+                            )
+
                             // Load friends for this user
                             isLoadingFriends = true
-                            val friendsResult = ApiRepository.friends.getFriends(it.user.email)
+                            val friendsResult =
+                                    ApiRepository.friends.getFriends(userResponse.user.email)
                             friendsResult.fold(
                                     onSuccess = { friendsList ->
                                         friends = friendsList
                                         // Fetch friend names
                                         coroutineScope.launch {
-                                            fetchFriendNames(friendsList, it.user.email)
+                                            fetchFriendNames(friendsList, userResponse.user.email)
                                         }
                                     },
                                     onFailure = { exception ->
-                                        error = "Failed to load friends: ${exception.message}"
+                                        updateError("Failed to load friends: ${exception.message}")
                                     }
                             )
                             isLoadingFriends = false
                         },
                         onFailure = { exception ->
-                            error = "Failed to get user info: ${exception.message}"
+                            updateError("Failed to get user info: ${exception.message}")
                         }
                 )
             } catch (e: Exception) {
-                error = "Exception getting user info: ${e.message}"
+                updateError("Exception getting user info: ${e.message}")
             }
         }
     }
@@ -136,77 +185,90 @@ fun GroupDetailScreen(groupId: Int, onNavigateBack: () -> Unit, modifier: Modifi
                 )
             },
             floatingActionButton = {
-                FloatingActionButton(
-                        onClick = {
-                            if (getAvailableFriends().isNotEmpty()) {
-                                showAddUserDialog = true
-                            }
-                        },
-                        containerColor =
-                                if (getAvailableFriends().isNotEmpty())
-                                        MaterialTheme.colorScheme.primary
-                                else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                ) { Icon(Icons.Default.Add, contentDescription = "Add Friend") }
+                Column {
+                    // Add Expense FAB
+                    FloatingActionButton(
+                            onClick = {
+                                group?.let { groupData ->
+                                    onAddExpense(groupData.id, groupData.name, groupData.members)
+                                }
+                            },
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.size(56.dp)
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = "Add Expense")
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    // Add Friend FAB
+                    FloatingActionButton(
+                            onClick = { showAddUserDialog = true },
+                            containerColor = MaterialTheme.colorScheme.secondary,
+                            contentColor = MaterialTheme.colorScheme.onSecondary,
+                            modifier = Modifier.size(56.dp)
+                    ) {
+                        Icon(Icons.Default.Person, contentDescription = "Add Friend")
+                    }
+                }
             }
     ) { innerPadding ->
-        if (group == null) {
-            Box(
-                    modifier = Modifier.fillMaxSize().padding(innerPadding),
-                    contentAlignment = Alignment.Center
-            ) { Text("Group not found") }
-        } else {
-            LazyColumn(
-                    modifier =
-                            Modifier.fillMaxSize()
-                                    .padding(innerPadding)
-                                    .padding(horizontal = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                // Group Info Card
-                item { GroupInfoCard(group = group!!) }
+        LazyColumn(
+                modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
+                        .padding(horizontal = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            // Group Info Card
+            group?.let { groupData ->
+                item {
+                    GroupInfoCard(group = groupData)
+                }
+            }
 
-                // Members Section
+            // Members Section
+            group?.members?.let { members ->
                 item {
                     Text(
-                            text = "Members (${group!!.members.size})",
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold
+                            text = "Members",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(vertical = 8.dp)
                     )
                 }
+                items(members) { member ->
+                    MemberCard(member = member)
+                }
+            }
 
-                // Member Cards
-                items(group!!.members) { member -> MemberCard(member = member) }
+            // Expenses Section
+            item {
+                Text(
+                        text = "Expenses",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(vertical = 8.dp)
+                )
+            }
 
-                // Empty state for no members
-                if (group!!.members.isEmpty()) {
-                    item {
-                        Box(
-                                modifier = Modifier.fillMaxWidth(),
-                                contentAlignment = Alignment.Center
-                        ) {
-                            Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Icon(
-                                        Icons.Default.Person,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(48.dp),
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Text(
-                                        text = "No members yet",
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Text(
-                                        text = "Tap the + button to add friends",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
+            if (isLoadingExpenses) {
+                item {
+                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
                     }
+                }
+            } else if (expenses.isEmpty()) {
+                item {
+                    Text(
+                            text = "No expenses yet.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(vertical = 16.dp)
+                    )
+                }
+            } else {
+                items(expenses) { expense ->
+                    ExpenseCard(expense = expense)
                 }
             }
         }
@@ -219,7 +281,10 @@ fun GroupDetailScreen(groupId: Int, onNavigateBack: () -> Unit, modifier: Modifi
                 isLoading = isLoadingFriends,
                 onDismiss = { showAddUserDialog = false },
                 onAddFriend = { friendEmail, friendName ->
-                    addFriendToGroup(group!!, friendEmail, friendName)
+                    addFriendToGroup(group!!, friendEmail, friendName, coroutineScope) {
+                            errorMessage ->
+                        updateError(errorMessage)
+                    }
                     showAddUserDialog = false
                 }
         )
@@ -230,25 +295,25 @@ fun GroupDetailScreen(groupId: Int, onNavigateBack: () -> Unit, modifier: Modifi
 fun GroupInfoCard(group: Group, modifier: Modifier = Modifier) {
     Card(
             modifier = modifier.fillMaxWidth(),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+        Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
             Text(
                     text = group.name,
-                    style = MaterialTheme.typography.headlineMedium,
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
             )
 
             if (!group.description.isNullOrBlank()) {
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(6.dp))
                 Text(
                         text = group.description,
-                        style = MaterialTheme.typography.bodyLarge,
+                        style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -276,38 +341,37 @@ fun MemberCard(member: GroupMember, modifier: Modifier = Modifier) {
             colors =
                     CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.surfaceVariant
-                    )
+                    ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Row(
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                modifier = Modifier.fillMaxWidth().padding(10.dp),
                 verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
                     Icons.Default.Person,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
             )
 
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(10.dp))
 
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                        text = member.user?.name ?: "User #${member.userId}",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Medium
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                            text = member.user?.name ?: "User #${member.userId}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium
+                    )
+                    // Note: We need to pass the group's creatorId to this component
+                    // For now, we'll show admin status in a different way
+                }
                 Text(
                         text = member.user?.email ?: "Joined ${member.joinedAt.substring(0, 10)}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                if (member.user?.email != null) {
-                    Text(
-                            text = "Joined ${member.joinedAt.substring(0, 10)}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
             }
         }
     }
@@ -443,22 +507,95 @@ fun FriendOptionCard(
 }
 
 // Function to add a friend to a group
-fun addFriendToGroup(group: Group, friendEmail: String, friendName: String) {
-    val newMember =
-            GroupMember(
-                    id = (System.currentTimeMillis() % 10000).toInt(),
-                    userId = (System.currentTimeMillis() % 1000).toInt(),
-                    groupId = group.id,
-                    joinedAt = System.currentTimeMillis().toString(),
-                    user =
-                            GroupUser(
-                                    id = (System.currentTimeMillis() % 1000).toInt(),
-                                    name = friendName,
-                                    email = friendEmail
+fun addFriendToGroup(
+        group: Group,
+        friendEmail: String,
+        friendName: String,
+        coroutineScope: CoroutineScope,
+        onError: (String) -> Unit
+) {
+    // Use backend API to add member to group
+    val firebaseUser = FirebaseAuth.getInstance().currentUser
+    if (firebaseUser != null) {
+        coroutineScope.launch {
+            try {
+                val result = ApiRepository.group.addMemberToGroup(group.id, friendEmail)
+                result.fold(
+                        onSuccess = {
+                            // Refresh the group data to show the new member
+                            val groupResult = ApiRepository.group.getGroupById(group.id)
+                            groupResult.fold(
+                                    onSuccess = { updatedGroup ->
+                                        // Update the group state
+                                        // Note: In a real app, you might want to use a state
+                                        // management solution
+                                        // For now, we'll just show a success message
+                                    },
+                                    onFailure = { exception ->
+                                        onError("Failed to refresh group: ${exception.message}")
+                                    }
                             )
-            )
+                        },
+                        onFailure = { exception ->
+                            onError("Failed to add member: ${exception.message}")
+                        }
+                )
+            } catch (e: Exception) {
+                onError("Exception adding member: ${e.message}")
+            }
+        }
+    }
+}
 
-    val updatedGroup = group.copy(members = group.members + newMember)
-
-    GroupStorage.updateGroup(updatedGroup)
+@Composable
+fun ExpenseCard(expense: Expense, modifier: Modifier = Modifier) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(10.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    Icons.Default.Add,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = expense.title,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Text(
+                        text = "$${expense.totalAmount / 100.0}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+                Text(
+                    text = expense.createdAt.substring(0, 10),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            if (expense.splits.isNotEmpty()) {
+                Text(
+                    text = "Split between ${expense.splits.size} people",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
 }

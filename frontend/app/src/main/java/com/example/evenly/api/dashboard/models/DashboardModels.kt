@@ -48,15 +48,14 @@ data class OwedSplitsResponse(
  * Expense data model
  */
 data class Expense(
-    val id: Long,
+    val id: String,
     val title: String,
     @SerializedName("total_amount")
     val totalAmount: Long,
     @SerializedName("created_by")
-    val createdBy: Long,
+    val createdBy: String,
     @SerializedName("created_at")
     val createdAt: String,
-    @SerializedName("development_splits")
     val splits: List<DebtorSplit> = emptyList()
 )
 
@@ -66,7 +65,6 @@ data class Expense(
 data class DebtorSplit(
     @SerializedName("amount_owed")
     val amountOwed: Long,
-    @SerializedName("development_users")
     val debtor: Debtor?
 )
 
@@ -81,15 +79,14 @@ data class Debtor(
  * Split data model
  */
 data class Split(
-    val id: Long,
-    @SerializedName("expenseId")
-    val expenseId: Long,
-    @SerializedName("userId")
-    val userId: Long,
+    val id: String,
+    @SerializedName("expenseid")
+    val expenseId: String,
+    @SerializedName("userid")
+    val userId: String,
     @SerializedName("amount_owed")
     val amountOwed: Long,
-    @SerializedName("development_expenses")
-    val expense: OwedExpenseDetails?
+    val expense: OwedExpenseDetails? = null
 )
 
 /**
@@ -97,13 +94,12 @@ data class Split(
  */
 data class OwedExpenseDetails(
     val title: String,
-    @SerializedName("development_users")
-    val lender: Lender?
+    val lender: Lender? = null
 )
 
 /**
  * A simple model for the person who lent the money.
  */
 data class Lender(
-    val name: String
+    val name: String? = null
 ) 

@@ -13,11 +13,11 @@ import retrofit2.http.Query
  */
 interface DashboardApiService {
     @GET("/api/dashboard/user-expenses/")
-    suspend fun getUserExpenses(@Query("user_id") userId: Int): Response<DashboardResponse>
+    suspend fun getUserExpenses(@Query("user_id") userId: String): Response<DashboardResponse>
     
     @GET("/api/dashboard/lent/")
-    suspend fun getLentExpenses(@Query("user_id") userId: Int): Response<LentExpensesResponse>
+    suspend fun getLentExpenses(@Query("user_id") userId: String): Response<LentExpensesResponse>
     
     @GET("/api/dashboard/owed/")
-    suspend fun getOwedSplits(@Query("user_id") userId: Int): Response<OwedSplitsResponse>
+    suspend fun getOwedSplits(@Query("user_id") userId: String): Response<OwedSplitsResponse>
 } 

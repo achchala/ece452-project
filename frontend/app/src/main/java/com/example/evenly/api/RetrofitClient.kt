@@ -2,6 +2,7 @@ package com.example.evenly.api
 
 import com.example.evenly.api.auth.AuthApiService
 import com.example.evenly.api.dashboard.DashboardApiService
+import com.example.evenly.api.expenses.ExpenseApiService
 import com.example.evenly.api.friends.FriendsApiService
 import com.example.evenly.api.group.GroupApiService
 import com.example.evenly.api.group.models.Group
@@ -44,9 +45,10 @@ object RetrofitClient {
     val friendsApiService: FriendsApiService = retrofit.create(FriendsApiService::class.java)
     // Group API Service
     val groupApiService: GroupApiService = retrofit.create(GroupApiService::class.java)
+    // Expense API Service
+    val expenseApiService: ExpenseApiService = retrofit.create(ExpenseApiService::class.java)
     
     // Add more API services here as needed
     // Example:
     // val paymentApiService: PaymentApiService = retrofit.create(PaymentApiService::class.java)
-    // val expenseApiService: ExpenseApiService = retrofit.create(ExpenseApiService::class.java)
 }

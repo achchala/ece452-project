@@ -20,21 +20,24 @@ import androidx.compose.ui.unit.dp
 sealed class Screen(val route: String, val title: String, val icon: ImageVector) {
     object Dashboard : Screen("dashboard", "Dashboard", Icons.Default.Home)
     object Friends : Screen("friends", "Friends", Icons.Default.Person)
+    object Groups : Screen("groups", "Groups", Icons.Default.Person)
     object CreateGroup : Screen("create_group", "Create Group", Icons.Default.Home)
-    object Groups : Screen("groups", "My Groups", Icons.Default.Home)
     object GroupDetail : Screen("group_detail", "Group Details", Icons.Default.Home)
+    object AddExpense : Screen("add_expense", "Add Expense", Icons.Default.Home)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
-        userId: Int,
+        userId: String,
         userName: String? = null,
         onLogout: () -> Unit,
         modifier: Modifier = Modifier
 ) {
     var selectedScreen by remember { mutableStateOf<Screen>(Screen.Dashboard) }
-    var selectedGroupId by remember { mutableStateOf<Int?>(null) }
+    var selectedGroupId by remember { mutableStateOf<String?>(null) }
+    var selectedGroupName by remember { mutableStateOf<String?>(null) }
+    var selectedGroupMembers by remember { mutableStateOf<List<com.example.evenly.api.group.models.GroupMember>?>(null) }
 
     Scaffold(
             modifier = modifier,
@@ -58,7 +61,7 @@ fun MainScreen(
             },
             bottomBar = {
                 // Only show bottom navigation for main screens
-                if (selectedScreen in listOf(Screen.Dashboard, Screen.Friends)) {
+                if (selectedScreen in listOf(Screen.Dashboard, Screen.Friends, Screen.Groups)) {
                     NavigationBar {
                         NavigationBarItem(
                                 icon = {
@@ -82,6 +85,17 @@ fun MainScreen(
                                 selected = selectedScreen == Screen.Friends,
                                 onClick = { selectedScreen = Screen.Friends }
                         )
+                        NavigationBarItem(
+                                icon = {
+                                    Icon(
+                                            Screen.Groups.icon,
+                                            contentDescription = Screen.Groups.title
+                                    )
+                                },
+                                label = { Text(Screen.Groups.title) },
+                                selected = selectedScreen == Screen.Groups,
+                                onClick = { selectedScreen = Screen.Groups }
+                        )
                     }
                 }
             }
@@ -93,7 +107,6 @@ fun MainScreen(
                         userName = userName,
                         onLogout = onLogout,
                         onCreateGroup = { selectedScreen = Screen.CreateGroup },
-                        onViewGroups = { selectedScreen = Screen.Groups },
                         modifier = Modifier.padding(innerPadding)
                 )
             }
@@ -112,7 +125,6 @@ fun MainScreen(
             }
             Screen.Groups -> {
                 GroupsScreen(
-                        onNavigateBack = { selectedScreen = Screen.Dashboard },
                         onCreateGroup = { selectedScreen = Screen.CreateGroup },
                         onGroupClick = { groupId ->
                             selectedGroupId = groupId
@@ -126,8 +138,30 @@ fun MainScreen(
                     GroupDetailScreen(
                             groupId = groupId,
                             onNavigateBack = { selectedScreen = Screen.Groups },
+                            onAddExpense = { groupId, groupName, groupMembers ->
+                                selectedGroupId = groupId
+                                selectedGroupName = groupName
+                                selectedGroupMembers = groupMembers
+                                selectedScreen = Screen.AddExpense
+                            },
                             modifier = Modifier.padding(innerPadding)
                     )
+                }
+            }
+            Screen.AddExpense -> {
+                selectedGroupId?.let { groupId ->
+                    selectedGroupName?.let { groupName ->
+                        selectedGroupMembers?.let { groupMembers ->
+                            AddExpenseScreen(
+                                groupId = groupId,
+                                groupName = groupName,
+                                groupMembers = groupMembers,
+                                onNavigateBack = { selectedScreen = Screen.GroupDetail },
+                                onExpenseAdded = { selectedScreen = Screen.GroupDetail },
+                                modifier = Modifier.padding(innerPadding)
+                            )
+                        }
+                    }
                 }
             }
         }
