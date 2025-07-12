@@ -5,6 +5,7 @@ import com.google.gson.annotations.SerializedName
 data class CreateGroupRequest(
         @SerializedName("name") val name: String,
         @SerializedName("description") val description: String? = null,
+        @SerializedName("totalBudget") val totalBudget: Double? = null,
         @SerializedName("firebaseId") val firebaseId: String
 )
 
@@ -20,6 +21,7 @@ data class Group(
         @SerializedName("id") val id: String,
         @SerializedName("name") val name: String,
         @SerializedName("description") val description: String?,
+        @SerializedName("total_budget") val totalBudget: Double?,
         @SerializedName("creator_id") val creatorId: String,
         @SerializedName("created_at") val createdAt: String,
         @SerializedName("members") val members: List<GroupMember> = emptyList()

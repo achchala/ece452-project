@@ -163,6 +163,7 @@ class SupabaseTableCreator:
             id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
             name VARCHAR(255) NOT NULL,
             description TEXT,
+            total_budget DECIMAL(10,2),
             created_by UUID NOT NULL,
             created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
             FOREIGN KEY (created_by) REFERENCES {self.get_table_name('users')}(id) ON DELETE CASCADE
@@ -203,6 +204,7 @@ class SupabaseTableCreator:
             total_amount INTEGER NOT NULL,
             created_by UUID NOT NULL,
             group_id UUID,
+            due_date DATE,
             created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
             FOREIGN KEY (created_by) REFERENCES {self.get_table_name('users')}(id) ON DELETE CASCADE,
             FOREIGN KEY (group_id) REFERENCES {self.get_table_name('groups')}(id) ON DELETE CASCADE
@@ -210,6 +212,7 @@ class SupabaseTableCreator:
         
         CREATE INDEX IF NOT EXISTS {table_name}_created_by_idx ON {table_name}(created_by);
         CREATE INDEX IF NOT EXISTS {table_name}_group_id_idx ON {table_name}(group_id);
+        CREATE INDEX IF NOT EXISTS {table_name}_due_date_idx ON {table_name}(due_date);
         """
         
         return self.execute_sql(sql)

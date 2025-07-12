@@ -20,12 +20,14 @@ class GroupRepository {
      * Creates a new group
      * @param name The name of the group
      * @param description Optional description of the group
+     * @param totalBudget Optional total budget for the group (in dollars)
      * @param firebaseId The Firebase ID of the user creating the group
      * @return Result containing either the created group or an exception
      */
     suspend fun createGroup(
             name: String,
             description: String?,
+            totalBudget: Double?,
             firebaseId: String
     ): Result<CreateGroupResponse> =
             withContext(Dispatchers.IO) {
@@ -34,6 +36,7 @@ class GroupRepository {
                             CreateGroupRequest(
                                     name = name,
                                     description = description,
+                                    totalBudget = totalBudget,
                                     firebaseId = firebaseId
                             )
 

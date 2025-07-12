@@ -8,6 +8,7 @@ data class CreateExpenseRequest(
     @SerializedName("totalAmount") val totalAmount: Int,
     @SerializedName("firebaseId") val firebaseId: String,
     @SerializedName("groupId") val groupId: String? = null,
+    @SerializedName("dueDate") val dueDate: String? = null,
     @SerializedName("splits") val splits: List<ExpenseSplit> = emptyList()
 )
 
@@ -60,8 +61,16 @@ data class Expense(
     @SerializedName("total_amount") val totalAmount: Int,
     @SerializedName("created_by") val createdBy: String,
     @SerializedName("group_id") val groupId: String? = null,
+    @SerializedName("due_date") val dueDate: String? = null,
     @SerializedName("created_at") val createdAt: String,
-    @SerializedName("splits") val splits: List<Split> = emptyList()
+    @SerializedName("splits") val splits: List<Split> = emptyList(),
+    @SerializedName("creator") val creator: ExpenseCreator? = null
+)
+
+data class ExpenseCreator(
+    @SerializedName("id") val id: String,
+    @SerializedName("name") val name: String,
+    @SerializedName("email") val email: String
 )
 
 data class Split(

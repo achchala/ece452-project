@@ -97,6 +97,7 @@ class ExpenseOperations:
                         'amount_owed': split.get('amount_owed'),
                         'expense': {
                             'title': expense_data.get('title'),
+                            'due_date': expense_data.get('due_date'),
                             'lender': lender
                         }
                     }
@@ -127,7 +128,7 @@ class ExpenseOperations:
         expense['splits'] = splits if splits else []
         return expense
     
-    def create_expense(self, title: str, total_amount: int, created_by: str, group_id: str = None) -> Optional[Dict]:
+    def create_expense(self, title: str, total_amount: int, created_by: str, group_id: str = None, due_date: str = None) -> Optional[Dict]:
         """Create a new expense."""
         data = {
             "title": title,
@@ -136,6 +137,8 @@ class ExpenseOperations:
         }
         if group_id:
             data["group_id"] = group_id
+        if due_date:
+            data["due_date"] = due_date
         return self.client._execute_query(
             table_name=self.expenses_table,
             operation='insert',
@@ -201,6 +204,33 @@ class ExpenseOperations:
             table_name=self.expenses_table,
             operation='delete',
             filters={'id': expense_id}
+        )
+    
+    def update_group_budget_after_expense(self, group_id: str, expense_amount: int) -> bool:
+        """Update group budget by subtracting the expense amount."""
+        # Get current group budget
+        group = self.client._execute_query(
+            table_name=self.client.get_table_name("groups"),
+            operation='select',
+            filters={'id': group_id}
+        )
+        
+        if not group:
+            return False
+            
+        current_budget = group[0].get('total_budget')
+        if current_budget is None:
+            return True  # No budget set, nothing to update
+            
+        # Calculate new budget
+        new_budget = current_budget - (expense_amount / 100.0)  # Convert cents to dollars
+        
+        # Update group budget
+        return self.client._execute_query(
+            table_name=self.client.get_table_name("groups"),
+            operation='update',
+            data={'total_budget': new_budget},
+            filters={'id': group_id}
         )
     
     def get_group_expenses(self, group_id: str) -> Optional[List[Dict]]:

@@ -10,13 +10,16 @@ class GroupOperations:
         self.groups_table = self.client.get_table_name("groups")
         self.group_memberships_table = self.client.get_table_name("group_memberships")
     
-    def create_group(self, name: str, description: str, created_by: str) -> Optional[Dict]:
+    def create_group(self, name: str, description: str, created_by: str, total_budget: Optional[float] = None) -> Optional[Dict]:
         """Create a new group and add the creator as a member."""
         data = {
             "name": name,
             "description": description,
             "created_by": created_by
         }
+        
+        if total_budget is not None:
+            data["total_budget"] = total_budget
         
         group = self.client._execute_query(
             table_name=self.groups_table,
