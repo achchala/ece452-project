@@ -508,11 +508,11 @@ fun FriendOptionCard(
 
 // Function to add a friend to a group
 fun addFriendToGroup(
-        group: Group,
-        friendEmail: String,
-        friendName: String,
-        coroutineScope: CoroutineScope,
-        onError: (String) -> Unit
+    group: Group,
+    friendEmail: String,
+    friendName: String,
+    coroutineScope: CoroutineScope,
+    onError: (String) -> Unit
 ) {
     // Use backend API to add member to group
     val firebaseUser = FirebaseAuth.getInstance().currentUser

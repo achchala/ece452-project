@@ -85,4 +85,9 @@ data class LentData(
 data class OwedData(
     @SerializedName("total_amount") val totalAmount: Int,
     @SerializedName("splits") val splits: List<Split>
-) 
+)
+
+data class ExpenseNotificationRequest(
+    @SerializedName("groupId") val groupId: String,
+    @SerializedName("expenseTitle") val expenseTitle: String
+)

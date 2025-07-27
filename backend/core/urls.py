@@ -8,6 +8,7 @@ from core.views.friend_request import FriendRequestView
 from core.views.dashboard import DashboardView
 from core.views.groups import GroupsView
 from core.views.expenses import ExpensesView
+from core.views.notifications import NotificationsView
 
 # Create a router and register our viewsets with it
 router = DefaultRouter()
@@ -16,6 +17,7 @@ router.register("auth", AuthView, basename="auth")
 router.register("dashboard", DashboardView, basename="dashboard")
 router.register("groups", GroupsView, basename="groups")
 router.register("expenses", ExpensesView, basename="expenses")
+router.register("notifications", NotificationsView, basename="notifications")
 
 # The API URLs are now determined automatically by the router
 urlpatterns = [

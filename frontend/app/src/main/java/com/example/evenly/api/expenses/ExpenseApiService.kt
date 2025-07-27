@@ -2,6 +2,7 @@ package com.example.evenly.api.expenses
 
 import com.example.evenly.api.expenses.models.CreateExpenseRequest
 import com.example.evenly.api.expenses.models.CreateExpenseResponse
+import com.example.evenly.api.expenses.models.ExpenseNotificationRequest
 import com.example.evenly.api.expenses.models.GetUserExpensesRequest
 import com.example.evenly.api.expenses.models.GetUserExpensesResponse
 import com.example.evenly.api.expenses.models.GetGroupExpensesRequest
@@ -29,4 +30,9 @@ interface ExpenseApiService {
 
     @POST("/api/expenses/dashboard/")
     suspend fun getDashboardData(@Body request: GetDashboardDataRequest): Response<GetDashboardDataResponse>
+
+    @POST("/api/expenses/expense-notification/")
+    suspend fun addedToExpenseNotification(
+        @Body request: ExpenseNotificationRequest
+    ): Response<Unit>
 } 

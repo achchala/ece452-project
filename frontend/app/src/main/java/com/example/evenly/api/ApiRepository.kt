@@ -5,6 +5,7 @@ import com.example.evenly.api.dashboard.DashboardRepository
 import com.example.evenly.api.expenses.ExpenseRepository
 import com.example.evenly.api.friends.FriendsRepository
 import com.example.evenly.api.group.GroupRepository
+import com.example.evenly.api.notifications.NotificationsRepository
 
 /**
  * Main API repository that coordinates all specialized API repositories.
@@ -25,6 +26,8 @@ object ApiRepository {
     
     // Expense repository - static instance
     val expenses: ExpenseRepository = ExpenseRepository(RetrofitClient.expenseApiService)
+
+    val notifications: NotificationsRepository = NotificationsRepository()
     
     // Add more repositories here as needed
     // Example:

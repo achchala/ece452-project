@@ -1,7 +1,6 @@
 package com.example.evenly.api.expenses
 
 import com.example.evenly.api.expenses.models.*
-import retrofit2.Response
 
 class ExpenseRepository(private val expenseApiService: ExpenseApiService) {
     
@@ -15,7 +14,17 @@ class ExpenseRepository(private val expenseApiService: ExpenseApiService) {
         return try {
             val request = CreateExpenseRequest(title, totalAmount, firebaseId, groupId, splits)
             val response = expenseApiService.createExpense(request)
-            
+
+            if (groupId != null) {
+                val notificationRequest =
+                    ExpenseNotificationRequest(
+                        groupId = groupId,
+                        expenseTitle = title
+                    )
+
+                expenseApiService.addedToExpenseNotification(notificationRequest)
+            }
+
             if (response.isSuccessful) {
                 Result.success(response.body()!!)
             } else {

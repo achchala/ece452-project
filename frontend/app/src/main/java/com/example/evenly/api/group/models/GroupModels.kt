@@ -41,5 +41,10 @@ data class User(
 
 data class AddMemberRequest(
         @SerializedName("firebaseId") val firebaseId: String,
-        @SerializedName("memberEmail") val memberEmail: String
+        @SerializedName("memberEmail") val memberEmail: String,
+)
+
+data class GroupNotificationRequest(
+        @SerializedName("email") val email: String,
+        @SerializedName("groupId") val groupId: String
 )

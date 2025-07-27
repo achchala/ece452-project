@@ -1,6 +1,11 @@
 package com.example.evenly.api.friends
 
-import retrofit2.http.*
+import com.example.evenly.api.friends.models.FriendNotificationRequest
+import retrofit2.Response
+import retrofit2.http.Body
+import retrofit2.http.GET
+import retrofit2.http.POST
+import retrofit2.http.Query
 
 interface FriendsApiService {
     @GET("/api/friend/get-all-requests/")
@@ -20,6 +25,11 @@ interface FriendsApiService {
     
     @POST("/api/friend/reject-friend/")
     suspend fun rejectFriendRequest(@Body request: RejectFriendRequestRequest): RejectFriendRequestResponse
+
+    @POST("/api/friend/friend-request-notification/")
+    suspend fun friendRequestNotification(
+        @Body request: FriendNotificationRequest
+    ): Response<Unit>
 }
 
 data class FriendRequest(
@@ -64,4 +74,4 @@ data class RejectFriendRequestRequest(
 
 data class RejectFriendRequestResponse(
     val status: String
-) 
+)

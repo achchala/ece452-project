@@ -5,6 +5,7 @@ import com.example.evenly.api.group.models.CreateGroupRequest
 import com.example.evenly.api.group.models.CreateGroupResponse
 import com.example.evenly.api.group.models.GetUserGroupsRequest
 import com.example.evenly.api.group.models.Group
+import com.example.evenly.api.group.models.GroupNotificationRequest
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -27,5 +28,10 @@ interface GroupApiService {
     suspend fun addMemberToGroup(
             @retrofit2.http.Path("groupId") groupId: String,
             @Body request: AddMemberRequest
+    ): Response<Unit>
+
+    @POST("/api/groups/group-notification/")
+    suspend fun addedToGroupNotification(
+        @Body request: GroupNotificationRequest
     ): Response<Unit>
 }

@@ -1,6 +1,7 @@
 package com.example.evenly.api.friends
 
 import com.example.evenly.api.RetrofitClient
+import com.example.evenly.api.friends.models.FriendNotificationRequest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -38,6 +39,14 @@ object FriendsRepository {
         try {
             val request = SendFriendRequestRequest(fromUser, toUser)
             val response = friendsApiService.sendFriendRequest(request)
+
+            val friendNotificationRequest = FriendNotificationRequest(
+                fromUser = fromUser,
+                toUser = toUser
+            )
+
+            friendsApiService.friendRequestNotification(friendNotificationRequest)
+
             Result.success(response)
         } catch (e: Exception) {
             Result.failure(e)

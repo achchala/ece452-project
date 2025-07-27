@@ -318,6 +318,40 @@ class GroupsView(viewsets.ViewSet):
             )
 
         return Response(members)
+    
+    @action(detail=False, methods=["post"], url_path="group-notification")
+    def post_group_notification(self, request):
+        email = request.data.get("email")
+        group_id = request.data.get("groupId")
+
+        if not email:
+            return Response(
+                {"error": "email is required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        
+        user = supabase.users.get_by_email(email)
+        if not user:
+            return Response(
+                {"error": "User not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        
+        group = supabase.groups.get_group_by_id(group_id)
+
+        if not group:
+            return Response({"error": "Failed to get group name"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        user_id = user.get("id")
+        notification = supabase.notifications.insert_notification(user_id, "You have been added to a new group: " + group.get("name"), False)
+
+        if not notification:
+            return Response(
+                {"error": "Failed to add notification"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+        
+        return Response(notification)
 
     @action(detail=False, methods=["post"], url_path="created-by-user")
     def get_groups_created_by_user(self, request):

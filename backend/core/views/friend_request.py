@@ -124,3 +124,32 @@ class FriendRequestView(viewsets.ViewSet):
             return Response({"error": "Failed to retrieve friends"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
         return Response({"friends": friends})
+
+    @action(detail=False, methods=["post"], url_path="friend-request-notification")
+    def friend_request_notification(self, request):
+        """Send a friend request notification to a user."""
+        from_user_email = request.data.get("from_user_email")
+        to_user_email = request.data.get("to_user_email")
+
+        if not all([from_user_email, to_user_email]):
+            return Response(
+                {"error": "Both from_user and to_user are required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        to_user = supabase.users.get_by_email(to_user_email)
+        if not to_user:
+            return Response(
+                {"error": "User not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+                
+        notification = supabase.notifications.insert_notification(to_user.get("id"), "You have a new friend request from " + from_user_email, False)
+
+        if not notification:
+            return Response(
+                {"error": "Failed to add notification"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        
+        return Response(notification)

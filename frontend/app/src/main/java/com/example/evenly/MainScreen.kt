@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.evenly.api.group.models.GroupMember
 
 sealed class Screen(val route: String, val title: String, val icon: ImageVector) {
     object Dashboard : Screen("dashboard", "Dashboard", Icons.Default.Home)
@@ -37,7 +38,7 @@ fun MainScreen(
     var selectedScreen by remember { mutableStateOf<Screen>(Screen.Dashboard) }
     var selectedGroupId by remember { mutableStateOf<String?>(null) }
     var selectedGroupName by remember { mutableStateOf<String?>(null) }
-    var selectedGroupMembers by remember { mutableStateOf<List<com.example.evenly.api.group.models.GroupMember>?>(null) }
+    var selectedGroupMembers by remember { mutableStateOf<List<GroupMember>?>(null) }
 
     Scaffold(
             modifier = modifier,

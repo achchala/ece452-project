@@ -319,6 +319,30 @@ class ExpensesView(viewsets.ViewSet):
         return Response({
             "expenses": expenses
         })
+    
+    @action(detail=False, methods=["post"], url_path="expense-notification")
+    def post_expense_notification(self, request):
+        group_id = request.data.get("groupId")
+        expense_title = request.data.get("expenseTitle")
+
+
+        group_members = supabase.groups.get_group_members(group_id)
+        group = supabase.groups.get_group_by_id(group_id)
+
+        if not group:
+            return Response({"error": "Failed to get group name"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        for member in group_members:
+            user_id = member.get("user_id")
+            notification = supabase.notifications.insert_notification(user_id, "A new expense '" + expense_title + "' has been added to " + group.get("name"), False)
+
+            if not notification:
+                return Response(
+                    {"error": "Failed to add notification"},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                )
+        
+        return Response(notification)
 
     @action(detail=False, methods=["post"], url_path="user-group-expenses")
     def get_user_group_expenses(self, request):

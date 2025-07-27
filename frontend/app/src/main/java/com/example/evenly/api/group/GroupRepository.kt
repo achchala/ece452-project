@@ -6,6 +6,7 @@ import com.example.evenly.api.group.models.CreateGroupRequest
 import com.example.evenly.api.group.models.CreateGroupResponse
 import com.example.evenly.api.group.models.GetUserGroupsRequest
 import com.example.evenly.api.group.models.Group
+import com.example.evenly.api.group.models.GroupNotificationRequest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -106,10 +107,8 @@ class GroupRepository {
             withContext(Dispatchers.IO) {
                 try {
                     val firebaseUser =
-                            com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
-                    if (firebaseUser == null) {
-                        return@withContext Result.failure(Exception("User not authenticated"))
-                    }
+                        com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+                            ?: return@withContext Result.failure(Exception("User not authenticated"))
 
                     val request =
                             AddMemberRequest(
@@ -118,6 +117,14 @@ class GroupRepository {
                             )
 
                     val response = groupApiService.addMemberToGroup(groupId, request)
+
+                    val notificationRequest =
+                        GroupNotificationRequest(
+                            email = memberEmail,
+                            groupId = groupId
+                        )
+
+                    groupApiService.addedToGroupNotification(notificationRequest)
 
                     if (response.isSuccessful) {
                         Result.success(Unit)
