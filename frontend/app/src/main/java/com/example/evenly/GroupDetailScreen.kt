@@ -12,6 +12,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.evenly.api.ApiRepository
@@ -197,7 +199,10 @@ fun GroupDetailScreen(
                             contentColor = MaterialTheme.colorScheme.onPrimary,
                             modifier = Modifier.size(56.dp)
                     ) {
-                        Icon(Icons.Default.Add, contentDescription = "Add Expense")
+                        Icon(
+                            painter = painterResource(id = R.drawable.attach_money_24px),
+                            contentDescription = "Add Expense"
+                        )
                     }
                     Spacer(modifier = Modifier.height(8.dp))
                     // Add Friend FAB
@@ -207,7 +212,10 @@ fun GroupDetailScreen(
                             contentColor = MaterialTheme.colorScheme.onSecondary,
                             modifier = Modifier.size(56.dp)
                     ) {
-                        Icon(Icons.Default.Person, contentDescription = "Add Friend")
+                        Icon(
+                            painter = painterResource(id = R.drawable.person_add_24px),
+                            contentDescription = "Add Friend"
+                        )
                     }
                 }
             }
@@ -314,6 +322,30 @@ fun GroupInfoCard(group: Group, modifier: Modifier = Modifier) {
             }
 
             Spacer(modifier = Modifier.height(8.dp))
+
+            // Budget information
+            group.totalBudget?.let { budget ->
+                val budgetColor = if (budget > 0) Color(0xFF2E7D32) else MaterialTheme.colorScheme.error
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.attach_money_24px),
+                        contentDescription = "Budget",
+                        modifier = Modifier.size(16.dp),
+                        tint = budgetColor
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "Budget: $${"%.2f".format(budget)}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = budgetColor
+                    )
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+            }
 
             Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -582,12 +614,50 @@ fun ExpenseCard(expense: Expense, modifier: Modifier = Modifier) {
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.primary
                     )
+                    
+                    // Creator information
+                    expense.creator?.let { creator ->
+                        Text(
+                            text = "Created by: ${creator.name}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
-                Text(
-                    text = expense.createdAt.substring(0, 10),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        text = expense.createdAt.substring(0, 10),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    
+                    // Due date with color coding
+                    expense.dueDate?.let { dueDate ->
+                        val dueDateLocal = java.time.LocalDate.parse(dueDate)
+                        val today = java.time.LocalDate.now()
+                        val isOverdue = dueDateLocal.isBefore(today)
+                        val isDueToday = dueDateLocal.isEqual(today)
+                        
+                        val dueDateColor = when {
+                            isOverdue -> MaterialTheme.colorScheme.error
+                            isDueToday -> MaterialTheme.colorScheme.error
+                            else -> Color(0xFF2E7D32) // Green
+                        }
+                        
+                        val dueDateText = when {
+                            isOverdue -> "Overdue: $dueDate"
+                            isDueToday -> "Due today: $dueDate"
+                            else -> "Due: $dueDate"
+                        }
+                        
+                        Text(
+                            text = dueDateText,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = dueDateColor,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
             }
             if (expense.splits.isNotEmpty()) {
                 Text(

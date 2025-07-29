@@ -13,6 +13,15 @@ class GroupsView(viewsets.ViewSet):
         name = request.data.get("name")
         description = request.data.get("description", "")
         firebase_id = request.data.get("firebaseId")
+        total_budget = request.data.get("totalBudget")
+        if total_budget is not None:
+            try:
+                total_budget = float(total_budget)
+            except (ValueError, TypeError):
+                return Response(
+                    {"error": "totalBudget must be a valid number"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
         if not all([name, firebase_id]):
             return Response(
@@ -29,7 +38,7 @@ class GroupsView(viewsets.ViewSet):
             )
 
         created_by = user.get("id")
-        group = supabase.groups.create_group(name, description, created_by)
+        group = supabase.groups.create_group(name, description, created_by, total_budget)
 
         if group is None:
             return Response(
@@ -43,6 +52,7 @@ class GroupsView(viewsets.ViewSet):
                 "id": group.get("id"),
                 "name": group.get("name"),
                 "description": group.get("description"),
+                "total_budget": group.get("total_budget"),
                 "creator_id": group.get("created_by"),
                 "created_at": group.get("created_at"),
             }
@@ -86,6 +96,7 @@ class GroupsView(viewsets.ViewSet):
                 "id": group.get("id"),
                 "name": group.get("name"),
                 "description": group.get("description"),
+                "total_budget": group.get("total_budget"),
                 "creator_id": group.get("created_by"),
                 "created_at": group.get("created_at"),
                 "members": members or []
@@ -119,6 +130,7 @@ class GroupsView(viewsets.ViewSet):
             "id": group.get("id"),
             "name": group.get("name"),
             "description": group.get("description"),
+            "total_budget": group.get("total_budget"),
             "creator_id": group.get("created_by"),
             "created_at": group.get("created_at"),
             "members": members or []

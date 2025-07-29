@@ -56,6 +56,8 @@ data class Expense(
     val createdBy: String,
     @SerializedName("created_at")
     val createdAt: String,
+    @SerializedName("due_date")
+    val dueDate: String? = null,
     val splits: List<DebtorSplit> = emptyList()
 )
 
@@ -94,6 +96,8 @@ data class Split(
  */
 data class OwedExpenseDetails(
     val title: String,
+    @SerializedName("due_date")
+    val dueDate: String? = null,
     val lender: Lender? = null
 )
 

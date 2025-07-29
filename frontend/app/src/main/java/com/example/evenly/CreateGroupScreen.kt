@@ -27,6 +27,7 @@ fun CreateGroupScreen(
 ) {
         var groupName by remember { mutableStateOf("") }
         var groupDescription by remember { mutableStateOf("") }
+        var groupBudget by remember { mutableStateOf("") }
         var isLoading by remember { mutableStateOf(false) }
         var error by remember { mutableStateOf<String?>(null) }
         var currentUser by remember { mutableStateOf<AuthUser?>(null) }
@@ -64,6 +65,7 @@ fun CreateGroupScreen(
                                                                 groupDescription.takeIf {
                                                                         it.isNotBlank()
                                                                 },
+                                                        totalBudget = groupBudget.toDoubleOrNull(),
                                                         firebaseId = firebaseUser.uid
                                                 )
 
@@ -154,10 +156,30 @@ fun CreateGroupScreen(
                                 keyboardOptions =
                                         KeyboardOptions(
                                                 keyboardType = KeyboardType.Text,
-                                                imeAction = ImeAction.Done
+                                                imeAction = ImeAction.Next
                                         ),
                                 minLines = 3,
                                 maxLines = 5
+                        )
+
+                        // Group Budget Field
+                        OutlinedTextField(
+                                value = groupBudget,
+                                onValueChange = { 
+                                    // Only allow numbers and decimal point
+                                    if (it.isEmpty() || it.matches(Regex("^\\d*\\.?\\d{0,2}$"))) {
+                                        groupBudget = it
+                                    }
+                                },
+                                label = { Text("Total Budget (Optional)") },
+                                placeholder = { Text("e.g., 1000.00") },
+                                modifier = Modifier.fillMaxWidth(),
+                                keyboardOptions =
+                                        KeyboardOptions(
+                                                keyboardType = KeyboardType.Decimal,
+                                                imeAction = ImeAction.Done
+                                        ),
+                                singleLine = true
                         )
 
                         // Error Message

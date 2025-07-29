@@ -6,6 +6,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.evenly.api.ApiRepository
@@ -13,6 +14,9 @@ import com.example.evenly.api.dashboard.models.DashboardResponse
 import com.example.evenly.api.dashboard.models.Expense
 import com.example.evenly.api.dashboard.models.Split
 import com.google.firebase.auth.FirebaseAuth
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -79,13 +83,7 @@ fun DashboardScreen(
     }
 
     Scaffold(
-            modifier = modifier.fillMaxSize(),
-            floatingActionButton = {
-                FloatingActionButton(
-                        onClick = onCreateGroup,
-                        containerColor = MaterialTheme.colorScheme.primary
-                ) { Text("+", style = MaterialTheme.typography.headlineMedium) }
-            }
+            modifier = modifier.fillMaxSize()
     ) { paddingValues ->
         Column(
                 modifier =
@@ -168,7 +166,7 @@ fun TotalSummaryCard(totalLent: Long, totalOwed: Long, modifier: Modifier = Modi
                         text = "$${"%.2f".format(totalLent / 100.0)}",
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
+                        color = Color(0xFF2E7D32)
                 )
             }
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -259,6 +257,18 @@ fun ExpenseCard(expense: Expense, modifier: Modifier = Modifier) {
                         color = MaterialTheme.colorScheme.primary
                 )
             }
+            
+            // Due date display
+            expense.dueDate?.let { dueDateStr ->
+                val dueDateInfo = formatDueDate(dueDateStr)
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                        text = "Due: ${dueDateInfo.formattedDate}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = dueDateInfo.color
+                )
+            }
+            
             Spacer(modifier = Modifier.height(8.dp))
 
             // List of people who owe money
@@ -292,6 +302,31 @@ fun ExpenseCard(expense: Expense, modifier: Modifier = Modifier) {
     }
 }
 
+data class DueDateInfo(
+    val formattedDate: String,
+    val color: Color
+)
+
+private fun formatDueDate(dueDateStr: String): DueDateInfo {
+    return try {
+        val dueDate = LocalDate.parse(dueDateStr, DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+        val today = LocalDate.now()
+        val daysUntilDue = dueDate.toEpochDay() - today.toEpochDay()
+        
+        val formattedDate = dueDate.format(DateTimeFormatter.ofPattern("MMM dd, yyyy"))
+        
+        val color = when {
+            daysUntilDue < 0 -> Color(0xFFD32F2F) // Red for overdue
+            daysUntilDue <= 3 -> Color(0xFFFF9800) // Orange for due soon (within 3 days)
+            else -> Color(0xFF2E7D32) // Green for upcoming
+        }
+        
+        DueDateInfo(formattedDate, color)
+    } catch (e: DateTimeParseException) {
+        DueDateInfo("Invalid date", Color(0xFF666666)) // Gray for invalid dates
+    }
+}
+
 @Composable
 fun SplitCard(split: Split, modifier: Modifier = Modifier) {
     Card(
@@ -300,31 +335,46 @@ fun SplitCard(split: Split, modifier: Modifier = Modifier) {
                     containerColor = MaterialTheme.colorScheme.surfaceVariant
             )
     ) {
-        Row(
-                modifier = Modifier.fillMaxWidth().padding(12.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+        Column(
+                modifier = Modifier.fillMaxWidth().padding(12.dp)
         ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                        text = split.expense?.title ?: "Expense #${split.expenseId}",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Medium
-                )
-                split.expense?.lender?.name?.let { lenderName ->
+            Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.Top
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
-                            text = "Owed to: $lenderName",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            text = split.expense?.title ?: "Expense #${split.expenseId}",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Medium
                     )
+                    split.expense?.lender?.name?.let { lenderName ->
+                        Text(
+                                text = "Owed to: $lenderName",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
+                Text(
+                        text = "$${"%.2f".format(split.amountOwed / 100.0)}",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.error
+                )
             }
-            Text(
-                    text = "$${"%.2f".format(split.amountOwed / 100.0)}",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.error
-            )
+            
+            // Due date display for owed expenses
+            split.expense?.dueDate?.let { dueDateStr ->
+                val dueDateInfo = formatDueDate(dueDateStr)
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                        text = "Due: ${dueDateInfo.formattedDate}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = dueDateInfo.color
+                )
+            }
         }
     }
 }

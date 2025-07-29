@@ -14,6 +14,7 @@ class ExpensesView(viewsets.ViewSet):
         total_amount = request.data.get("totalAmount")
         firebase_id = request.data.get("firebaseId")
         splits = request.data.get("splits", [])
+        due_date = request.data.get("dueDate")
 
         if not all([title, total_amount, firebase_id]):
             return Response(
@@ -33,7 +34,7 @@ class ExpensesView(viewsets.ViewSet):
         
         # Create the expense
         group_id = request.data.get("groupId")
-        expense = supabase.expenses.create_expense(title, total_amount, created_by, group_id)
+        expense = supabase.expenses.create_expense(title, total_amount, created_by, group_id, due_date)
         
         if expense is None:
             return Response(
@@ -61,6 +62,10 @@ class ExpensesView(viewsets.ViewSet):
                         )
                         if split_data:
                             created_splits.append(split_data)
+        
+        # Update group budget if group_id is provided
+        if group_id:
+            supabase.expenses.update_group_budget_after_expense(group_id, total_amount)
 
         return Response({
             "message": "Expense created successfully",
@@ -68,6 +73,7 @@ class ExpensesView(viewsets.ViewSet):
                 "id": expense.get("id"),
                 "title": expense.get("title"),
                 "total_amount": expense.get("total_amount"),
+                "due_date": expense.get("due_date"),
                 "created_by": expense.get("created_by"),
                 "created_at": expense.get("created_at"),
                 "splits": created_splits

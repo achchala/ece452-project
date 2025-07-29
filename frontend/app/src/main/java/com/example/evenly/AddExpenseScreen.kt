@@ -8,6 +8,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -15,6 +16,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import com.example.evenly.api.ApiRepository
 import com.example.evenly.api.expenses.models.ExpenseSplit
 import com.example.evenly.api.group.models.GroupMember
@@ -36,8 +39,11 @@ fun AddExpenseScreen(
     var selectedMembers by remember { mutableStateOf<Set<String>>(emptySet()) }
     var splitType by remember { mutableStateOf(SplitType.EQUAL) }
     var customAmounts by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
+    var dueDateType by remember { mutableStateOf(DueDateType.NONE) }
+    var customDueDate by remember { mutableStateOf<LocalDate?>(null) }
     var isLoading by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
+    var dueDateDropdownExpanded by remember { mutableStateOf(false) }
     
     val coroutineScope = rememberCoroutineScope()
     val firebaseUser = FirebaseAuth.getInstance().currentUser
@@ -61,7 +67,7 @@ fun AddExpenseScreen(
                 .padding(innerPadding)
                 .padding(horizontal = 16.dp)
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // Header
             Text(
@@ -79,7 +85,7 @@ fun AddExpenseScreen(
             ) {
                 Column(
                     modifier = Modifier.fillMaxWidth().padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Text(
                         text = "Expense Details",
@@ -87,69 +93,120 @@ fun AddExpenseScreen(
                         fontWeight = FontWeight.Medium
                     )
 
-                    // Title Input
-                    OutlinedTextField(
-                        value = title,
-                        onValueChange = { title = it },
-                        label = { Text("Expense Title") },
+                    // Title and Amount in a row
+                    Row(
                         modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = title,
+                            onValueChange = { title = it },
+                            label = { Text("Title") },
+                            modifier = Modifier.weight(1f),
+                            singleLine = true
+                        )
+                        
+                        OutlinedTextField(
+                            value = amount,
+                            onValueChange = { 
+                                if (it.isEmpty() || it.matches(Regex("^\\d*\\.?\\d{0,2}$"))) {
+                                    amount = it
+                                }
+                            },
+                            label = { Text("Amount") },
+                            modifier = Modifier.weight(1f),
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                        )
+                    }
 
-                    // Amount Input
-                    OutlinedTextField(
-                        value = amount,
-                        onValueChange = { 
-                            // Only allow numbers and decimal point
-                            if (it.isEmpty() || it.matches(Regex("^\\d*\\.?\\d{0,2}$"))) {
-                                amount = it
+                    // Due Date Dropdown
+                    ExposedDropdownMenuBox(
+                        expanded = dueDateDropdownExpanded,
+                        onExpandedChange = { dueDateDropdownExpanded = it }
+                    ) {
+                        OutlinedTextField(
+                            value = dueDateType.displayName,
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("Due Date") },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = dueDateDropdownExpanded) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .menuAnchor()
+                        )
+                        
+                        ExposedDropdownMenu(
+                            expanded = dueDateDropdownExpanded,
+                            onDismissRequest = { dueDateDropdownExpanded = false }
+                        ) {
+                            DueDateType.values().forEach { option ->
+                                DropdownMenuItem(
+                                    text = { Text(option.displayName) },
+                                    onClick = {
+                                        dueDateType = option
+                                        dueDateDropdownExpanded = false
+                                        if (option != DueDateType.CUSTOM) {
+                                            customDueDate = null
+                                        }
+                                    }
+                                )
                             }
-                        },
-                        label = { Text("Amount ($)") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
-                    )
-                }
-            }
+                        }
+                    }
 
-            // Split Type Selection
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
-                )
-            ) {
-                Column(
-                    modifier = Modifier.fillMaxWidth().padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    Text(
-                        text = "Split Type",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Medium
-                    )
-
-                    SplitType.values().forEach { splitTypeOption ->
+                    // Custom date picker (compact)
+                    if (dueDateType == DueDateType.CUSTOM) {
+                        var showDatePicker by remember { mutableStateOf(false) }
+                        
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            RadioButton(
-                                selected = splitType == splitTypeOption,
-                                onClick = { splitType = splitTypeOption }
+                            OutlinedTextField(
+                                value = customDueDate?.format(DateTimeFormatter.ofPattern("MMM dd, yyyy")) ?: "",
+                                onValueChange = { },
+                                label = { Text("Custom Date") },
+                                modifier = Modifier.weight(1f),
+                                readOnly = true
                             )
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = splitTypeOption.displayName,
-                                style = MaterialTheme.typography.bodyLarge
-                            )
+                            Button(
+                                onClick = { showDatePicker = true },
+                                modifier = Modifier.height(56.dp)
+                            ) {
+                                Text("Pick")
+                            }
+                        }
+
+                        if (showDatePicker) {
+                            val today = LocalDate.now()
+                            DatePickerDialog(
+                                onDismissRequest = { showDatePicker = false },
+                                confirmButton = {
+                                    TextButton(onClick = { showDatePicker = false }) {
+                                        Text("OK")
+                                    }
+                                },
+                                dismissButton = {
+                                    TextButton(onClick = { showDatePicker = false }) {
+                                        Text("Cancel")
+                                    }
+                                }
+                            ) {
+                                DatePicker(
+                                    state = rememberDatePickerState(
+                                        initialSelectedDateMillis = today.plusDays(1).toEpochDay() * 24 * 60 * 60 * 1000
+                                    ),
+                                    showModeToggle = false
+                                )
+                            }
                         }
                     }
                 }
             }
 
-            // Member Selection
+            // Split Type and Member Selection Combined
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
@@ -158,17 +215,46 @@ fun AddExpenseScreen(
             ) {
                 Column(
                     modifier = Modifier.fillMaxWidth().padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Text(
-                        text = "Select Members",
+                        text = "Split & Members",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Medium
                     )
 
-                    // Note about expense creator
+                    // Split Type Selection (compact)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        SplitType.values().forEach { splitTypeOption ->
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                RadioButton(
+                                    selected = splitType == splitTypeOption,
+                                    onClick = { splitType = splitTypeOption }
+                                )
+                                Text(
+                                    text = splitTypeOption.displayName,
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
+                        }
+                    }
+
+                    Divider()
+
+                    // Member Selection (compact)
                     Text(
-                        text = "Note: You (the expense creator) won't be charged - you're paying for everyone else.",
+                        text = "Select Members",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Medium
+                    )
+
+                    Text(
+                        text = "You won't be charged - you're paying for everyone else.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -195,13 +281,14 @@ fun AddExpenseScreen(
                             Icon(
                                 Icons.Default.Person,
                                 contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
                                     text = member.user?.name ?: "User #$memberId",
-                                    style = MaterialTheme.typography.bodyLarge,
+                                    style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.Medium
                                 )
                                 member.user?.email?.let { email ->
@@ -227,7 +314,7 @@ fun AddExpenseScreen(
                 ) {
                     Column(
                         modifier = Modifier.fillMaxWidth().padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Text(
                             text = "Custom Amounts",
@@ -235,7 +322,6 @@ fun AddExpenseScreen(
                             fontWeight = FontWeight.Medium
                         )
 
-                        // Get borrowers (excluding expense creator)
                         val currentUserEmail = firebaseUser?.email
                         val borrowers = selectedMembers.filter { memberId ->
                             val member = groupMembers.find { it.userId == memberId }
@@ -243,7 +329,7 @@ fun AddExpenseScreen(
                         }
 
                         Text(
-                            text = "Enter amounts for each person (total should equal $${amount.toDoubleOrNull() ?: 0.0})",
+                            text = "Total: $${amount.toDoubleOrNull() ?: 0.0}",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -270,7 +356,7 @@ fun AddExpenseScreen(
                 }
             }
 
-            // Summary Section
+            // Summary Section (compact)
             if (title.isNotBlank() && amount.isNotBlank() && selectedMembers.isNotEmpty()) {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -278,36 +364,32 @@ fun AddExpenseScreen(
                         containerColor = MaterialTheme.colorScheme.primaryContainer
                     )
                 ) {
-                    Column(
+                    Row(
                         modifier = Modifier.fillMaxWidth().padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = "Expense Summary",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                        
-                        Text(
-                            text = "You will pay: $${amount.toDoubleOrNull() ?: 0.0}",
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                        
-                        val currentUserEmail = firebaseUser?.email
-                        val borrowers = selectedMembers.filter { memberId ->
-                            val member = groupMembers.find { it.userId == memberId }
-                            member?.user?.email != currentUserEmail
-                        }
-                        
-                        if (borrowers.isNotEmpty()) {
+                        Column {
                             Text(
-                                text = "Split between ${borrowers.size} people",
-                                style = MaterialTheme.typography.bodyMedium,
+                                text = "You will pay: $${amount.toDoubleOrNull() ?: 0.0}",
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer
                             )
+                            
+                            val currentUserEmail = firebaseUser?.email
+                            val borrowers = selectedMembers.filter { memberId ->
+                                val member = groupMembers.find { it.userId == memberId }
+                                member?.user?.email != currentUserEmail
+                            }
+                            
+                            if (borrowers.isNotEmpty()) {
+                                Text(
+                                    text = "Split between ${borrowers.size} people",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            }
                         }
                     }
                 }
@@ -341,6 +423,8 @@ fun AddExpenseScreen(
                                 selectedMembers = selectedMembers,
                                 splitType = splitType,
                                 customAmounts = customAmounts,
+                                dueDateType = dueDateType,
+                                customDueDate = customDueDate,
                                 groupMembers = groupMembers,
                                 firebaseUser = firebaseUser,
                                 onSuccess = {
@@ -381,6 +465,14 @@ fun AddExpenseScreen(
 enum class SplitType(val displayName: String) {
     EQUAL("Split Equally"),
     CUSTOM("Custom Amounts")
+}
+
+enum class DueDateType(val displayName: String, val days: Int?) {
+    NONE("No Due Date", null),
+    ONE_DAY("1 Day", 1),
+    THREE_DAYS("3 Days", 3),
+    ONE_WEEK("1 Week", 7),
+    CUSTOM("Custom Date", null)
 }
 
 private fun validateInputs(
@@ -424,6 +516,8 @@ private suspend fun addExpense(
     selectedMembers: Set<String>,
     splitType: SplitType,
     customAmounts: Map<String, String>,
+    dueDateType: DueDateType,
+    customDueDate: LocalDate?,
     groupMembers: List<GroupMember>,
     firebaseUser: com.google.firebase.auth.FirebaseUser?,
     onSuccess: () -> Unit,
@@ -440,6 +534,17 @@ private suspend fun addExpense(
 
         val totalAmountCents = (amount.toDouble() * 100).toInt()
         val splits = mutableListOf<ExpenseSplit>()
+
+        // Calculate due date
+        val dueDate = when (dueDateType) {
+            DueDateType.NONE -> null
+            DueDateType.ONE_DAY -> LocalDate.now().plusDays(1)
+            DueDateType.THREE_DAYS -> LocalDate.now().plusDays(3)
+            DueDateType.ONE_WEEK -> LocalDate.now().plusDays(7)
+            DueDateType.CUSTOM -> customDueDate
+        }
+        
+        val dueDateString = dueDate?.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
 
         // Get current user's email to exclude them from splits
         val currentUserEmail = firebaseUser.email
@@ -482,6 +587,7 @@ private suspend fun addExpense(
             totalAmount = totalAmountCents,
             firebaseId = firebaseUser.uid,
             groupId = groupId,
+            dueDate = dueDateString,
             splits = splits
         )
 

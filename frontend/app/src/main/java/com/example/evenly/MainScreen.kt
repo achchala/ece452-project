@@ -13,18 +13,18 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.evenly.api.group.models.GroupMember
 
-sealed class Screen(val route: String, val title: String, val icon: ImageVector) {
-    object Dashboard : Screen("dashboard", "Dashboard", Icons.Default.Home)
-    object Friends : Screen("friends", "Friends", Icons.Default.Person)
-    object Groups : Screen("groups", "Groups", Icons.Default.Person)
-    object CreateGroup : Screen("create_group", "Create Group", Icons.Default.Home)
-    object GroupDetail : Screen("group_detail", "Group Details", Icons.Default.Home)
-    object AddExpense : Screen("add_expense", "Add Expense", Icons.Default.Home)
+sealed class Screen(val route: String, val title: String) {
+    object Dashboard : Screen("dashboard", "Dashboard")
+    object Friends : Screen("friends", "Friends")
+    object Groups : Screen("groups", "Groups")
+    object CreateGroup : Screen("create_group", "Create Group")
+    object GroupDetail : Screen("group_detail", "Group Details")
+    object AddExpense : Screen("add_expense", "Add Expense")
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -67,7 +67,7 @@ fun MainScreen(
                         NavigationBarItem(
                                 icon = {
                                     Icon(
-                                            Screen.Dashboard.icon,
+                                            Icons.Default.Home,
                                             contentDescription = Screen.Dashboard.title
                                     )
                                 },
@@ -78,7 +78,7 @@ fun MainScreen(
                         NavigationBarItem(
                                 icon = {
                                     Icon(
-                                            Screen.Friends.icon,
+                                            Icons.Default.Person,
                                             contentDescription = Screen.Friends.title
                                     )
                                 },
@@ -89,7 +89,7 @@ fun MainScreen(
                         NavigationBarItem(
                                 icon = {
                                     Icon(
-                                            Screen.Groups.icon,
+                                            painter = painterResource(id = R.drawable.group_24px),
                                             contentDescription = Screen.Groups.title
                                     )
                                 },
