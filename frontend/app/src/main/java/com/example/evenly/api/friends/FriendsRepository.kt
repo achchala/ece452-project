@@ -72,4 +72,14 @@ object FriendsRepository {
             Result.failure(e)
         }
     }
+    
+    suspend fun getFriendAnalytics(friendEmail: String, currentUserEmail: String): Result<FriendAnalyticsResponse> = withContext(Dispatchers.IO) {
+        try {
+            val request = FriendAnalyticsRequest(friendEmail, currentUserEmail)
+            val response = friendsApiService.getFriendAnalytics(request)
+            Result.success(response)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 } 

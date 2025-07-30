@@ -647,3 +647,41 @@ class ExpenseOperations:
                     pending_splits.append(enriched_split)
         
         return pending_splits
+
+    def get_user_expenses(self, user_id: str) -> Optional[List[Dict]]:
+        """Get all expenses for a user (both created and owed)."""
+        # Get expenses created by the user
+        created_expenses = self.client._execute_query(
+            table_name=self.expenses_table,
+            operation='select',
+            filters={'created_by': user_id}
+        ) or []
+        
+        # Get expenses where the user owes money
+        owed_splits = self.client._execute_query(
+            table_name=self.splits_table,
+            operation='select',
+            filters={'userid': user_id}
+        ) or []
+        
+        owed_expenses = []
+        for split in owed_splits:
+            expense_id = split.get("expenseid")
+            if expense_id:
+                expense = self.client._execute_query(
+                    table_name=self.expenses_table,
+                    operation="select",
+                    filters={"id": expense_id},
+                )
+                if expense:
+                    owed_expenses.append(expense[0])
+        
+        # Combine and remove duplicates
+        all_expenses = created_expenses + owed_expenses
+        unique_expenses = {}
+        for expense in all_expenses:
+            expense_id = expense.get('id')
+            if expense_id not in unique_expenses:
+                unique_expenses[expense_id] = expense
+        
+        return list(unique_expenses.values())
