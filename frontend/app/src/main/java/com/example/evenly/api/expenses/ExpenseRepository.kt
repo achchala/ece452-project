@@ -96,4 +96,44 @@ class ExpenseRepository(private val expenseApiService: ExpenseApiService) {
             Result.failure(e)
         }
     }
+
+    suspend fun updateExpense(
+        expenseId: String,
+        title: String,
+        totalAmount: Int,
+        category: String?,
+        dueDate: String?,
+        firebaseId: String
+    ): Result<UpdateExpenseResponse> {
+        return try {
+            val request = UpdateExpenseRequest(title, totalAmount, firebaseId, dueDate, category)
+            val response = expenseApiService.updateExpense(expenseId, request)
+            
+            if (response.isSuccessful) {
+                Result.success(response.body()!!)
+            } else {
+                Result.failure(Exception("Failed to update expense: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun deleteExpense(
+        expenseId: String,
+        firebaseId: String
+    ): Result<DeleteExpenseResponse> {
+        return try {
+            val request = DeleteExpenseRequest(firebaseId)
+            val response = expenseApiService.deleteExpense(expenseId, request)
+            
+            if (response.isSuccessful) {
+                Result.success(response.body()!!)
+            } else {
+                Result.failure(Exception("Failed to delete expense: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 } 

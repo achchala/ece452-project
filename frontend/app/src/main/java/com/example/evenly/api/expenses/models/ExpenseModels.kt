@@ -102,3 +102,24 @@ data class ExpenseNotificationRequest(
     @SerializedName("groupId") val groupId: String,
     @SerializedName("expenseTitle") val expenseTitle: String
 )
+
+data class UpdateExpenseRequest(
+    @SerializedName("title") val title: String,
+    @SerializedName("totalAmount") val totalAmount: Int,
+    @SerializedName("firebaseId") val firebaseId: String,
+    @SerializedName("dueDate") val dueDate: String? = null,
+    @SerializedName("category") val category: String? = null
+)
+
+data class UpdateExpenseResponse(
+    @SerializedName("message") val message: String,
+    @SerializedName("expense") val expense: Expense
+)
+
+data class DeleteExpenseRequest(
+    @SerializedName("firebaseId") val firebaseId: String
+)
+
+data class DeleteExpenseResponse(
+    @SerializedName("message") val message: String
+)
