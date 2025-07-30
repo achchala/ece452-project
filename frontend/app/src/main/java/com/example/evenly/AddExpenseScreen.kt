@@ -36,6 +36,7 @@ fun AddExpenseScreen(
 ) {
     var title by remember { mutableStateOf("") }
     var amount by remember { mutableStateOf("") }
+    var selectedCategory by remember { mutableStateOf<ExpenseCategory?>(null) }
     var selectedMembers by remember { mutableStateOf<Set<String>>(emptySet()) }
     var splitType by remember { mutableStateOf(SplitType.EQUAL) }
     var customAmounts by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
@@ -119,6 +120,12 @@ fun AddExpenseScreen(
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
                         )
                     }
+
+                    // Category Selector
+                    CategorySelector(
+                        selectedCategory = selectedCategory,
+                        onCategorySelected = { selectedCategory = it }
+                    )
 
                     // Due Date Dropdown
                     ExposedDropdownMenuBox(
@@ -420,6 +427,7 @@ fun AddExpenseScreen(
                                 title = title,
                                 amount = amount,
                                 groupId = groupId,
+                                selectedCategory = selectedCategory,
                                 selectedMembers = selectedMembers,
                                 splitType = splitType,
                                 customAmounts = customAmounts,
@@ -513,6 +521,7 @@ private suspend fun addExpense(
     title: String,
     amount: String,
     groupId: String,
+    selectedCategory: ExpenseCategory?,
     selectedMembers: Set<String>,
     splitType: SplitType,
     customAmounts: Map<String, String>,
@@ -588,6 +597,7 @@ private suspend fun addExpense(
             firebaseId = firebaseUser.uid,
             groupId = groupId,
             dueDate = dueDateString,
+            category = selectedCategory?.name,
             splits = splits
         )
 

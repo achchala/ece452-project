@@ -10,10 +10,11 @@ class ExpenseRepository(private val expenseApiService: ExpenseApiService) {
         firebaseId: String,
         groupId: String? = null,
         dueDate: String? = null,
+        category: String? = null,
         splits: List<ExpenseSplit> = emptyList()
     ): Result<CreateExpenseResponse> {
         return try {
-            val request = CreateExpenseRequest(title, totalAmount, firebaseId, groupId, dueDate, splits)
+            val request = CreateExpenseRequest(title, totalAmount, firebaseId, groupId, dueDate, category, splits)
             val response = expenseApiService.createExpense(request)
 
             if (groupId != null) {
