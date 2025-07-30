@@ -15,6 +15,7 @@ class ExpensesView(viewsets.ViewSet):
         firebase_id = request.data.get("firebaseId")
         splits = request.data.get("splits", [])
         due_date = request.data.get("dueDate")
+        category = request.data.get("category")
 
         if not all([title, total_amount, firebase_id]):
             return Response(
@@ -31,11 +32,13 @@ class ExpensesView(viewsets.ViewSet):
             )
 
         created_by = user.get("id")
-        
+
         # Create the expense
         group_id = request.data.get("groupId")
-        expense = supabase.expenses.create_expense(title, total_amount, created_by, group_id, due_date)
-        
+        expense = supabase.expenses.create_expense(
+            title, total_amount, created_by, group_id, due_date, category
+        )
+
         if expense is None:
             return Response(
                 {"error": "Failed to create expense"},
@@ -43,42 +46,44 @@ class ExpensesView(viewsets.ViewSet):
             )
 
         expense_id = expense.get("id")
-        
+
         # Create splits if provided
         created_splits = []
         if splits:
             for split in splits:
                 user_email = split.get("userEmail")
                 amount_owed = split.get("amountOwed")
-                
+
                 if user_email and amount_owed is not None:
                     # Get user by email
                     split_user = supabase.users.get_by_email(user_email)
                     if split_user:
                         split_data = supabase.expenses.create_split(
-                            expense_id, 
-                            split_user.get("id"), 
-                            amount_owed
+                            expense_id, split_user.get("id"), amount_owed
                         )
                         if split_data:
                             created_splits.append(split_data)
-        
+
         # Update group budget if group_id is provided
         if group_id:
             supabase.expenses.update_group_budget_after_expense(group_id, total_amount)
 
-        return Response({
-            "message": "Expense created successfully",
-            "expense": {
-                "id": expense.get("id"),
-                "title": expense.get("title"),
-                "total_amount": expense.get("total_amount"),
-                "due_date": expense.get("due_date"),
-                "created_by": expense.get("created_by"),
-                "created_at": expense.get("created_at"),
-                "splits": created_splits
-            }
-        }, status=status.HTTP_201_CREATED)
+        return Response(
+            {
+                "message": "Expense created successfully",
+                "expense": {
+                    "id": expense.get("id"),
+                    "title": expense.get("title"),
+                    "total_amount": expense.get("total_amount"),
+                    "due_date": expense.get("due_date"),
+                    "category": expense.get("category"),
+                    "created_by": expense.get("created_by"),
+                    "created_at": expense.get("created_at"),
+                    "splits": created_splits,
+                },
+            },
+            status=status.HTTP_201_CREATED,
+        )
 
     @action(detail=False, methods=["post"], url_path="user-expenses")
     def get_user_expenses(self, request):
@@ -100,17 +105,14 @@ class ExpensesView(viewsets.ViewSet):
             )
 
         user_id = user.get("id")
-        
+
         # Get expenses where user lent money
         lent_expenses = supabase.expenses.get_user_lent_expenses(user_id) or []
-        
+
         # Get splits where user owes money
         owed_splits = supabase.expenses.get_user_owed_splits(user_id) or []
 
-        return Response({
-            "lent_expenses": lent_expenses,
-            "owed_splits": owed_splits
-        })
+        return Response({"lent_expenses": lent_expenses, "owed_splits": owed_splits})
 
     @action(detail=True, methods=["get"], url_path="detail")
     def get_expense(self, request, pk=None):
@@ -175,6 +177,8 @@ class ExpensesView(viewsets.ViewSet):
             update_data["title"] = title
         if total_amount is not None:
             update_data["total_amount"] = total_amount
+        if category is not None:
+            update_data["category"] = category
 
         if not update_data:
             return Response(
@@ -275,7 +279,9 @@ class ExpensesView(viewsets.ViewSet):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        split = supabase.expenses.create_split(expense_id, split_user.get("id"), amount_owed)
+        split = supabase.expenses.create_split(
+            expense_id, split_user.get("id"), amount_owed
+        )
 
         if split is None:
             return Response(
@@ -322,32 +328,39 @@ class ExpensesView(viewsets.ViewSet):
 
         expenses = supabase.expenses.get_group_expenses(group_id)
 
-        return Response({
-            "expenses": expenses
-        })
-    
+        return Response({"expenses": expenses})
+
     @action(detail=False, methods=["post"], url_path="expense-notification")
     def post_expense_notification(self, request):
         group_id = request.data.get("groupId")
         expense_title = request.data.get("expenseTitle")
 
-
         group_members = supabase.groups.get_group_members(group_id)
         group = supabase.groups.get_group_by_id(group_id)
 
         if not group:
-            return Response({"error": "Failed to get group name"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response(
+                {"error": "Failed to get group name"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
         for member in group_members:
             user_id = member.get("user_id")
-            notification = supabase.notifications.insert_notification(user_id, "A new expense '" + expense_title + "' has been added to " + group.get("name"), False)
+            notification = supabase.notifications.insert_notification(
+                user_id,
+                "A new expense '"
+                + expense_title
+                + "' has been added to "
+                + group.get("name"),
+                False,
+            )
 
             if not notification:
                 return Response(
                     {"error": "Failed to add notification"},
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 )
-        
+
         return Response(notification)
 
     @action(detail=False, methods=["post"], url_path="user-group-expenses")
@@ -373,4 +386,4 @@ class ExpensesView(viewsets.ViewSet):
         user_id = user.get("id")
         expenses = supabase.expenses.get_user_group_expenses(user_id, group_id)
 
-        return Response(expenses) 
+        return Response(expenses)
