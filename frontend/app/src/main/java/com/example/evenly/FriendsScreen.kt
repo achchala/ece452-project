@@ -26,9 +26,16 @@ import com.example.evenly.ui.theme.BottomBackgroundColor
 import com.example.evenly.ui.theme.TopBackgroundColor
 import com.example.evenly.api.ApiRepository
 import com.example.evenly.api.friends.FriendRequest
+import com.example.evenly.api.friends.FriendAnalyticsResponse
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.sp
+import java.text.SimpleDateFormat
+import java.util.*
 
 enum class FriendsTab {
     FRIENDS, REQUESTS
@@ -54,6 +61,10 @@ fun FriendsScreen(
     var isLoadingFriendNames by remember { mutableStateOf(false) }
     var validationError by remember { mutableStateOf<String?>(null) }
     var isRefreshing by remember { mutableStateOf(false) }
+    var selectedFriendForAnalytics by remember { mutableStateOf<FriendRequest?>(null) }
+    var showAnalyticsDialog by remember { mutableStateOf(false) }
+    var friendAnalytics by remember { mutableStateOf<FriendAnalyticsResponse?>(null) }
+    var isLoadingAnalytics by remember { mutableStateOf(false) }
 
     val coroutineScope = rememberCoroutineScope()
 
@@ -80,6 +91,37 @@ fun FriendsScreen(
         }
         friendNames = namesMap
         isLoadingFriendNames = false
+    }
+
+    suspend fun loadFriendAnalytics(friend: FriendRequest) {
+        isLoadingAnalytics = true
+        val friendEmail = if (friend.from_user == currentUserEmail) friend.to_user else friend.from_user
+        
+        Log.d("FriendsScreen", "Loading analytics for friend: $friendEmail")
+        Log.d("FriendsScreen", "Current user email: $currentUserEmail")
+        
+        try {
+            val result = ApiRepository.friends.getFriendAnalytics(friendEmail, currentUserEmail!!)
+            result.fold(
+                onSuccess = { analytics ->
+                    Log.d("FriendsScreen", "Successfully loaded analytics: $analytics")
+                    friendAnalytics = analytics
+                },
+                onFailure = { exception ->
+                    Log.e("FriendsScreen", "Failed to load friend analytics: ${exception.message}")
+                    Log.e("FriendsScreen", "Exception stack trace: ${exception.stackTraceToString()}")
+                    // Show error dialog or handle gracefully
+                    showAnalyticsDialog = false
+                }
+            )
+        } catch (e: Exception) {
+            Log.e("FriendsScreen", "Exception loading friend analytics: ${e.message}")
+            Log.e("FriendsScreen", "Exception stack trace: ${e.stackTraceToString()}")
+            // Show error dialog or handle gracefully
+            showAnalyticsDialog = false
+        }
+        
+        isLoadingAnalytics = false
     }
 
     suspend fun refreshAllData() {
@@ -421,7 +463,23 @@ fun FriendsScreen(
                                                 FriendCard(
                                                     friend = friend,
                                                     currentUserEmail = currentUserEmail,
-                                                    friendName = friendNames[if (friend.from_user == currentUserEmail) friend.to_user else friend.from_user]
+                                                    friendName = friendNames[if (friend.from_user == currentUserEmail) friend.to_user else friend.from_user],
+                                                    onClick = {
+                                                        selectedFriendForAnalytics = friend
+                                                        if (currentUserEmail != null) {
+                                                            showAnalyticsDialog = true
+                                                            coroutineScope.launch {
+                                                                try {
+                                                                    loadFriendAnalytics(friend)
+                                                                } catch (e: Exception) {
+                                                                    Log.e("FriendsScreen", "Error loading analytics: ${e.message}")
+                                                                    showAnalyticsDialog = false
+                                                                }
+                                                            }
+                                                        } else {
+                                                            Log.e("FriendsScreen", "Current user email is null")
+                                                        }
+                                                    }
                                                 )
                                             }
                                         }
@@ -730,20 +788,50 @@ fun FriendsScreen(
             }
         )
     }
+
+    // Friend Analytics Dialog
+    if (showAnalyticsDialog) {
+        if (friendAnalytics != null) {
+            FriendAnalyticsDialog(
+                analytics = friendAnalytics!!,
+                onDismiss = {
+                    showAnalyticsDialog = false
+                    friendAnalytics = null
+                }
+            )
+        } else if (isLoadingAnalytics) {
+            AlertDialog(
+                onDismissRequest = { },
+                containerColor = Color.White,
+                title = {
+                    Text("Loading Analytics...")
+                },
+                text = {
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                },
+                confirmButton = { }
+            )
+        }
+    }
 }
-
-
-
 
 @Composable
 fun FriendCard(
     friend: FriendRequest,
     currentUserEmail: String?,
     friendName: String?,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
         colors = CardDefaults.cardColors(
             containerColor = Color.White
         )
@@ -786,6 +874,237 @@ fun FriendCard(
             }
         }
     }
+}
+
+@Composable
+fun FriendAnalyticsDialog(
+    analytics: FriendAnalyticsResponse,
+    onDismiss: () -> Unit
+) {
+    Log.d("FriendAnalyticsDialog", "Rendering dialog with analytics: $analytics")
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Color.White,
+        title = {
+            Text(
+                text = analytics.user_info.name ?: "Friend Analytics",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp)
+            ) {
+                // User Info Section
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFF8F9FA))
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp)
+                    ) {
+                        Text(
+                            text = "User Information",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Black
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        
+                        Text(
+                            text = "Name: ${analytics.user_info.name ?: "Not provided"}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.Gray
+                        )
+                        Text(
+                            text = "Email: ${analytics.user_info.email}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.Gray
+                        )
+                        
+                        analytics.user_info.friendship_date?.let { dateStr ->
+                            val formattedDate = try {
+                                val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'", Locale.getDefault())
+                                val outputFormat = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
+                                val date = inputFormat.parse(dateStr)
+                                date?.let { outputFormat.format(it) }
+                            } catch (e: Exception) {
+                                dateStr.substring(0, 10)
+                            }
+                            Text(
+                                text = "Friends since: $formattedDate",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color.Gray
+                            )
+                        }
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                // Credit Score Section
+                analytics.credit_score?.let { score ->
+                    if (score >= 300 && score <= 850) { // Valid credit score range
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFFF8F9FA))
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(16.dp)
+                            ) {
+                                Text(
+                                    text = "Credit Score",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.Black
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                
+                                // Credit score visualization
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(60.dp)
+                                        .background(
+                                            color = Color(0xFFE8F5E8),
+                                            shape = RoundedCornerShape(8.dp)
+                                        )
+                                        .padding(8.dp),
+                                    contentAlignment = Alignment.CenterStart
+                                ) {
+                                    val progress = (score - 300) / 550f // Normalize to 0-1
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxHeight()
+                                            .fillMaxWidth(progress.toFloat())
+                                            .background(
+                                                color = when {
+                                                    score >= 750 -> Color(0xFF4CAF50) // Excellent
+                                                    score >= 650 -> Color(0xFF8BC34A) // Good
+                                                    score >= 550 -> Color(0xFFFFC107) // Fair
+                                                    else -> Color(0xFFF44336) // Poor
+                                                },
+                                                shape = RoundedCornerShape(6.dp)
+                                            )
+                                    )
+                                    Text(
+                                        text = "$score",
+                                        style = MaterialTheme.typography.titleLarge,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White,
+                                        modifier = Modifier.padding(start = 12.dp)
+                                    )
+                                }
+                                
+                                Text(
+                                    text = when {
+                                        score >= 750 -> "Excellent"
+                                        score >= 650 -> "Good"
+                                        score >= 550 -> "Fair"
+                                        else -> "Poor"
+                                    },
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color.Gray,
+                                    modifier = Modifier.padding(top = 4.dp)
+                                )
+                            }
+                        }
+                        
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
+                }
+                
+                // Spending Analytics Section
+                if (analytics.spending_analytics.isNotEmpty()) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFF8F9FA))
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp)
+                        ) {
+                            Text(
+                                text = "Spending by Category",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.Black
+                            )
+                            Text(
+                                text = "Total spent: $${String.format("%.2f", analytics.total_spent)}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.Gray
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            
+                            analytics.spending_analytics.forEach { category ->
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = category.category ?: "Other",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        modifier = Modifier.weight(1f),
+                                        color = Color.Black
+                                    )
+                                    Text(
+                                        text = "$${String.format("%.2f", category.amount)}",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.Medium,
+                                        color = Color.Black
+                                    )
+                                    Text(
+                                        text = "(${String.format("%.1f", category.percentage)}%)",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = Color.Gray,
+                                        modifier = Modifier.padding(start = 8.dp)
+                                    )
+                                }
+                                
+                                // Progress bar for category
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(4.dp)
+                                        .background(
+                                            color = Color(0xFFE0E0E0),
+                                            shape = RoundedCornerShape(2.dp)
+                                        )
+                                        .padding(top = 2.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxHeight()
+                                            .fillMaxWidth((category.percentage / 100f).toFloat())
+                                            .background(
+                                                color = Color(0xFF5FB953),
+                                                shape = RoundedCornerShape(2.dp)
+                                            )
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onDismiss,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF5FB953),
+                    contentColor = Color.White
+                )
+            ) {
+                Text("Close")
+            }
+        }
+    )
 }
 
 @Composable

@@ -110,4 +110,32 @@ class FriendRequestOperations:
             return all_friends
         except Exception as e:
             print(f"Error getting friends: {e}")
+            return None
+    
+    def get_friendship_date(self, user1_email: str, user2_email: str) -> Optional[Dict]:
+        """Get the friendship date between two users."""
+        if not self.client.client:
+            return None
+        try:
+            # Check both directions since friendship could be initiated by either user
+            friendship1 = self.client._execute_query(
+                table_name=self.table_name,
+                operation='select',
+                filters={'from_user': user1_email, 'to_user': user2_email, 'request_completed': True}
+            )
+            friendship2 = self.client._execute_query(
+                table_name=self.table_name,
+                operation='select',
+                filters={'from_user': user2_email, 'to_user': user1_email, 'request_completed': True}
+            )
+            
+            # Return the first completed friendship found
+            if friendship1 and len(friendship1) > 0:
+                return friendship1[0]
+            elif friendship2 and len(friendship2) > 0:
+                return friendship2[0]
+            else:
+                return None
+        except Exception as e:
+            print(f"Error getting friendship date: {e}")
             return None 

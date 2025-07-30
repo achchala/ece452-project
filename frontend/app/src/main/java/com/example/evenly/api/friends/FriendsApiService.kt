@@ -26,6 +26,9 @@ interface FriendsApiService {
     @POST("/api/friend/reject-friend/")
     suspend fun rejectFriendRequest(@Body request: RejectFriendRequestRequest): RejectFriendRequestResponse
 
+    @POST("/api/friend/friend-analytics/")
+    suspend fun getFriendAnalytics(@Body request: FriendAnalyticsRequest): FriendAnalyticsResponse
+
     @POST("/api/friend/friend-request-notification/")
     suspend fun friendRequestNotification(
         @Body request: FriendNotificationRequest
@@ -74,4 +77,28 @@ data class RejectFriendRequestRequest(
 
 data class RejectFriendRequestResponse(
     val status: String
+)
+
+data class FriendAnalyticsRequest(
+    val friend_email: String,
+    val current_user_email: String
+)
+
+data class FriendAnalyticsResponse(
+    val user_info: UserInfo,
+    val credit_score: Int?,
+    val spending_analytics: List<SpendingCategory>,
+    val total_spent: Double
+)
+
+data class UserInfo(
+    val name: String?,
+    val email: String,
+    val friendship_date: String?
+)
+
+data class SpendingCategory(
+    val category: String,
+    val amount: Double,
+    val percentage: Double
 )
