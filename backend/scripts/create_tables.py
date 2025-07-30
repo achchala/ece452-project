@@ -127,11 +127,13 @@ class SupabaseTableCreator:
             email VARCHAR(254) UNIQUE NOT NULL,
             date_joined TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
             firebase_id VARCHAR(255) UNIQUE NOT NULL,
-            name VARCHAR(255) NULL
+            name VARCHAR(255) NULL,
+            credit_score INTEGER NULL
         );
         
         CREATE INDEX IF NOT EXISTS {table_name}_email_idx ON {table_name}(email);
         CREATE INDEX IF NOT EXISTS {table_name}_firebase_id_idx ON {table_name}(firebase_id);
+        CREATE INDEX IF NOT EXISTS {table_name}_credit_score_idx ON {table_name}(credit_score);
         """
         
         return self.execute_sql(sql)
@@ -226,6 +228,8 @@ class SupabaseTableCreator:
             expenseId UUID NOT NULL,
             userId UUID NOT NULL,
             amount_owed INTEGER NOT NULL,
+            paid_request TIMESTAMP WITH TIME ZONE,
+            paid_confirmed TIMESTAMP WITH TIME ZONE,
             created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
             FOREIGN KEY (expenseId) REFERENCES {self.get_table_name('expenses')}(id) ON DELETE CASCADE,
             FOREIGN KEY (userId) REFERENCES {self.get_table_name('users')}(id) ON DELETE CASCADE
@@ -233,6 +237,8 @@ class SupabaseTableCreator:
         
         CREATE INDEX IF NOT EXISTS {table_name}_expense_id_idx ON {table_name}(expenseId);
         CREATE INDEX IF NOT EXISTS {table_name}_user_id_idx ON {table_name}(userId);
+        CREATE INDEX IF NOT EXISTS {table_name}_paid_request_idx ON {table_name}(paid_request);
+        CREATE INDEX IF NOT EXISTS {table_name}_paid_confirmed_idx ON {table_name}(paid_confirmed);
         """
         
         return self.execute_sql(sql)

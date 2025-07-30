@@ -2,6 +2,7 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from core.supabase import supabase
+from core.supabase.operations.credit_score_operations import CreditScoreOperations
 
 
 class ExpensesView(viewsets.ViewSet):
@@ -67,6 +68,20 @@ class ExpensesView(viewsets.ViewSet):
         # Update group budget if group_id is provided
         if group_id:
             supabase.expenses.update_group_budget_after_expense(group_id, total_amount)
+
+        # Update credit scores for all users involved in the expense
+        try:
+            credit_score_ops = CreditScoreOperations(supabase.base_client)
+            # Update credit score for the expense creator
+            credit_score_ops.update_user_credit_score(created_by)
+            
+            # Update credit scores for all users who owe money
+            for split in created_splits:
+                if split and split.get('userid'):
+                    credit_score_ops.update_user_credit_score(split.get('userid'))
+        except Exception as e:
+            # Log error but don't fail the expense creation
+            print(f"Credit score update failed: {e}")
 
         return Response(
             {
@@ -412,6 +427,14 @@ class ExpensesView(viewsets.ViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         
+        # Update credit score for the user who requested payment
+        try:
+            credit_score_ops = CreditScoreOperations(supabase.base_client)
+            credit_score_ops.update_user_credit_score(user_id)
+        except Exception as e:
+            # Log error but don't fail the payment request
+            print(f"Credit score update failed: {e}")
+        
         return Response({"message": "Payment confirmation requested", "split": result})
 
     @action(detail=False, methods=["post"], url_path="confirm-payment")
@@ -434,6 +457,24 @@ class ExpensesView(viewsets.ViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         
+        # Update credit score for the user who paid
+        try:
+            credit_score_ops = CreditScoreOperations(supabase.base_client)
+            # Get the user ID from the split
+            split_data = supabase.base_client._execute_query(
+                table_name=supabase.base_client.get_table_name("splits"),
+                operation='select',
+                filters={'id': split_id}
+            )
+            
+            if split_data:
+                user_id = split_data[0].get('userid')
+                if user_id:
+                    credit_score_ops.update_user_credit_score(user_id)
+        except Exception as e:
+            # Log error but don't fail the payment confirmation
+            print(f"Credit score update failed: {e}")
+        
         return Response({"message": "Payment confirmed", "split": result})
 
     @action(detail=False, methods=["post"], url_path="reject-payment")
@@ -455,6 +496,24 @@ class ExpensesView(viewsets.ViewSet):
                 {"error": "Failed to reject payment or unauthorized"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        
+        # Update credit score for the user whose payment was rejected
+        try:
+            credit_score_ops = CreditScoreOperations(supabase.base_client)
+            # Get the user ID from the split
+            split_data = supabase.base_client._execute_query(
+                table_name=supabase.base_client.get_table_name("splits"),
+                operation='select',
+                filters={'id': split_id}
+            )
+            
+            if split_data:
+                user_id = split_data[0].get('userid')
+                if user_id:
+                    credit_score_ops.update_user_credit_score(user_id)
+        except Exception as e:
+            # Log error but don't fail the payment rejection
+            print(f"Credit score update failed: {e}")
         
         return Response({"message": "Payment rejected", "split": result})
 
