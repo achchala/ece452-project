@@ -63,6 +63,7 @@ fun formatDueDate(dueDateStr: String): DueDateInfo {
 @Composable
 fun QuickActionsSection(
         onCreateGroup: () -> Unit,
+        onAddExpense: () -> Unit,
         modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
@@ -73,6 +74,7 @@ fun QuickActionsSection(
         )
         Spacer(modifier = Modifier.height(16.dp))
 
+        // Create Group Button
         Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors =
@@ -94,6 +96,36 @@ fun QuickActionsSection(
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                         text = "Start a new group",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.White
+                )
+            }
+        }
+        
+        Spacer(modifier = Modifier.height(12.dp))
+        
+        // Add Expense Button
+        Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors =
+                        CardDefaults.cardColors(
+                                containerColor = Color(0xFF5BBD6C) // Green color
+                        ),
+                onClick = onAddExpense
+        ) {
+            Column(
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                        text = "Add Expense",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = Color.White
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                        text = "Add expense to a group",
                         style = MaterialTheme.typography.bodySmall,
                         color = Color.White
                 )
@@ -310,6 +342,7 @@ fun DashboardScreen(
         userName: String? = null,
         onLogout: () -> Unit,
         onCreateGroup: () -> Unit,
+        onAddExpense: () -> Unit,
         modifier: Modifier = Modifier
 ) {
     var dashboardData by remember { mutableStateOf<DashboardResponse?>(null) }
@@ -434,7 +467,7 @@ fun DashboardScreen(
                         }
 
                         // Quick Actions Section
-                        item { QuickActionsSection(onCreateGroup = onCreateGroup) }
+                        item { QuickActionsSection(onCreateGroup = onCreateGroup, onAddExpense = onAddExpense) }
 
                         // Lent Section
                         item { 

@@ -32,6 +32,7 @@ sealed class Screen(val route: String, val title: String) {
     object CreateGroup : Screen("create_group", "Create Group")
     object GroupDetail : Screen("group_detail", "Group Details")
     object AddExpense : Screen("add_expense", "Add Expense")
+    object SelectGroupForExpense : Screen("select_group_for_expense", "Select Group")
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -168,6 +169,7 @@ fun MainScreen(
                             userName = userName,
                             onLogout = onLogout,
                             onCreateGroup = { selectedScreen = Screen.CreateGroup },
+                            onAddExpense = { selectedScreen = Screen.SelectGroupForExpense },
                             modifier = Modifier.padding(innerPadding)
                     )
                 }
@@ -230,6 +232,18 @@ fun MainScreen(
                             }
                         }
                     }
+                }
+                Screen.SelectGroupForExpense -> {
+                    SelectGroupForExpenseScreen(
+                        onNavigateBack = { selectedScreen = Screen.Dashboard },
+                        onGroupSelected = { groupId, groupName, groupMembers ->
+                            selectedGroupId = groupId
+                            selectedGroupName = groupName
+                            selectedGroupMembers = groupMembers
+                            selectedScreen = Screen.AddExpense
+                        },
+                        modifier = Modifier.padding(innerPadding)
+                    )
                 }
             }
 
