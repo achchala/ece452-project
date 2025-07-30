@@ -449,6 +449,7 @@ fun AddFriendDialog(
 
     AlertDialog(
             onDismissRequest = onDismiss,
+            containerColor = Color.White,
             title = { Text("Add Friend to Group") },
             text = {
                 if (isLoading) {
@@ -507,10 +508,20 @@ fun AddFriendDialog(
                         enabled =
                                 selectedFriendEmail != null &&
                                         !isLoading &&
-                                        availableFriends.isNotEmpty()
+                                        availableFriends.isNotEmpty(),
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = Color(0xFFFF7024)
+                        )
                 ) { Text("Add Friend") }
             },
-            dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+            dismissButton = { 
+                TextButton(
+                    onClick = onDismiss,
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = Color(0xFFFF7024)
+                    )
+                ) { Text("Cancel") } 
+            }
     )
 }
 
@@ -536,11 +547,22 @@ fun FriendOptionCard(
                 modifier = Modifier.fillMaxWidth().padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                    Icons.Default.Person,
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(
+                        color = Color(0xFFA6DB93),
+                        shape = androidx.compose.foundation.shape.CircleShape
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Person,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
-            )
+                    modifier = Modifier.size(24.dp),
+                    tint = Color.White
+                )
+            }
 
             Spacer(modifier = Modifier.width(12.dp))
 
@@ -561,7 +583,7 @@ fun FriendOptionCard(
                 Icon(
                         Icons.Default.Check,
                         contentDescription = "Selected",
-                        tint = MaterialTheme.colorScheme.primary
+                        tint = Color(0xFFFF7024)
                 )
             }
         }
@@ -693,7 +715,7 @@ fun ExpenseCard(
                         }
                     }
                     Text(
-                        text = "$${expense.totalAmount / 100.0}",
+                        text = "$${"%.2f".format(expense.totalAmount / 100.0)}",
                         style = MaterialTheme.typography.bodyMedium,
                         color = if (isFullyPaid) {
                             MaterialTheme.colorScheme.onSurfaceVariant

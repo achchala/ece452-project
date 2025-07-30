@@ -359,7 +359,7 @@ fun AddExpenseScreen(
                         }
 
                         Text(
-                            text = "Total: $${amount.toDoubleOrNull() ?: 0.0}",
+                            text = "Total: $${"%.2f".format(amount.toDoubleOrNull() ?: 0.0)}",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
