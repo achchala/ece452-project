@@ -101,6 +101,16 @@ fun GroupDetailScreen(
         }
     }
 
+    // Force refresh when key changes
+    LaunchedEffect(key) {
+        // Refresh expenses when key changes (after update/delete)
+        if (groupId.isNotEmpty()) {
+            coroutineScope.launch {
+                fetchGroupExpenses(groupId)
+            }
+        }
+    }
+
     // Load group data and current user info
     LaunchedEffect(groupId) {
         // Load group from backend API
