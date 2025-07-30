@@ -82,7 +82,7 @@ fun AddExpenseScreen(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    containerColor = Color.White
                 )
             ) {
                 Column(
@@ -105,7 +105,11 @@ fun AddExpenseScreen(
                             onValueChange = { title = it },
                             label = { Text("Title") },
                             modifier = Modifier.weight(1f),
-                            singleLine = true
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                unfocusedBorderColor = Color(0xFFFF7024),
+                                focusedBorderColor = Color(0xFFFF7024)
+                            )
                         )
                         
                         OutlinedTextField(
@@ -118,7 +122,11 @@ fun AddExpenseScreen(
                             label = { Text("Amount") },
                             modifier = Modifier.weight(1f),
                             singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                unfocusedBorderColor = Color(0xFFFF7024),
+                                focusedBorderColor = Color(0xFFFF7024)
+                            )
                         )
                     }
 
@@ -141,7 +149,11 @@ fun AddExpenseScreen(
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = dueDateDropdownExpanded) },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .menuAnchor()
+                                .menuAnchor(),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                unfocusedBorderColor = Color(0xFFFF7024),
+                                focusedBorderColor = Color(0xFFFF7024)
+                            )
                         )
                         
                         ExposedDropdownMenu(
@@ -176,12 +188,19 @@ fun AddExpenseScreen(
                                 onValueChange = { },
                                 label = { Text("Custom Date") },
                                 modifier = Modifier.weight(1f),
-                                readOnly = true
+                                readOnly = true,
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    unfocusedBorderColor = Color(0xFFFF7024),
+                                    focusedBorderColor = Color(0xFFFF7024)
+                                )
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Button(
                                 onClick = { showDatePicker = true },
-                                modifier = Modifier.height(56.dp)
+                                modifier = Modifier.height(56.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFFFF7024)
+                                )
                             ) {
                                 Text("Pick")
                             }
@@ -218,7 +237,7 @@ fun AddExpenseScreen(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    containerColor = Color.White
                 )
             ) {
                 Column(
@@ -289,7 +308,7 @@ fun AddExpenseScreen(
                             Icon(
                                 Icons.Default.Person,
                                 contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
+                                tint = Color(0xFFFF7024), // Orange color
                                 modifier = Modifier.size(20.dp)
                             )
                             Spacer(modifier = Modifier.width(8.dp))

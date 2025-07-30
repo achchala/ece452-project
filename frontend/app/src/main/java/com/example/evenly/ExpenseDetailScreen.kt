@@ -123,7 +123,7 @@ fun ExpenseDetailScreen(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    containerColor = Color.White
                 )
             ) {
                 Column(
@@ -146,7 +146,11 @@ fun ExpenseDetailScreen(
                             onValueChange = { title = it },
                             label = { Text("Title") },
                             modifier = Modifier.weight(1f),
-                            singleLine = true
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                unfocusedBorderColor = Color(0xFFFF7024),
+                                focusedBorderColor = Color(0xFFFF7024)
+                            )
                         )
                         
                         OutlinedTextField(
@@ -159,7 +163,11 @@ fun ExpenseDetailScreen(
                             label = { Text("Amount") },
                             modifier = Modifier.weight(1f),
                             singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                unfocusedBorderColor = Color(0xFFFF7024),
+                                focusedBorderColor = Color(0xFFFF7024)
+                            )
                         )
                     }
 
@@ -182,7 +190,11 @@ fun ExpenseDetailScreen(
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = dueDateDropdownExpanded) },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .menuAnchor()
+                                .menuAnchor(),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                unfocusedBorderColor = Color(0xFFFF7024),
+                                focusedBorderColor = Color(0xFFFF7024)
+                            )
                         )
                         
                         ExposedDropdownMenu(
@@ -217,12 +229,19 @@ fun ExpenseDetailScreen(
                                 onValueChange = { },
                                 label = { Text("Custom Date") },
                                 modifier = Modifier.weight(1f),
-                                readOnly = true
+                                readOnly = true,
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    unfocusedBorderColor = Color(0xFFFF7024),
+                                    focusedBorderColor = Color(0xFFFF7024)
+                                )
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Button(
                                 onClick = { showDatePicker = true },
-                                modifier = Modifier.height(56.dp)
+                                modifier = Modifier.height(56.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFFFF7024)
+                                )
                             ) {
                                 Text("Pick")
                             }
@@ -260,7 +279,7 @@ fun ExpenseDetailScreen(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    containerColor = Color.White
                 )
             ) {
                 Column(
@@ -294,7 +313,7 @@ fun ExpenseDetailScreen(
                                     text = "$${"%.2f".format(split.amountOwed / 100.0)}",
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.Medium,
-                                    color = MaterialTheme.colorScheme.primary
+                                    color = Color(0xFFFF7024) // Orange color
                                 )
                             }
                         }
@@ -331,7 +350,10 @@ fun ExpenseDetailScreen(
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
-                enabled = !isLoading
+                enabled = !isLoading,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFFF7024)
+                )
             ) {
                 if (isLoading) {
                     CircularProgressIndicator(
