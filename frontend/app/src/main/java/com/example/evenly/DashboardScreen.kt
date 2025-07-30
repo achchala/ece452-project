@@ -245,11 +245,21 @@ fun ExpenseCard(expense: Expense, modifier: Modifier = Modifier) {
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.Top
             ) {
-                Text(
-                        text = expense.title,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Medium
-                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                            text = expense.title,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Medium
+                    )
+                    
+                    // Category chip (only show if category exists and is not null/empty)
+                    expense.category?.let { categoryStr ->
+                        if (categoryStr.isNotBlank() && categoryStr != "null") {
+                            val category = ExpenseCategory.fromString(categoryStr)
+                            CategoryChip(category = category)
+                        }
+                    }
+                }
                 Text(
                         text = "$${"%.2f".format(expense.totalAmount / 100.0)}",
                         style = MaterialTheme.typography.titleMedium,

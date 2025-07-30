@@ -604,11 +604,24 @@ fun ExpenseCard(expense: Expense, modifier: Modifier = Modifier) {
                 )
                 Spacer(modifier = Modifier.width(10.dp))
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = expense.title,
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Medium
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = expense.title,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium
+                        )
+                        
+                        // Category chip (only show if category exists and is valid)
+                        expense.category?.let { categoryStr ->
+                            if (categoryStr.isNotBlank() && categoryStr != "null") {
+                                val category = ExpenseCategory.fromString(categoryStr)
+                                CategoryChip(category = category)
+                            }
+                        }
+                    }
                     Text(
                         text = "$${expense.totalAmount / 100.0}",
                         style = MaterialTheme.typography.bodyMedium,
