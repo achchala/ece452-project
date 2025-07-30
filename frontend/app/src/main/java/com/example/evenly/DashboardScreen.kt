@@ -229,6 +229,7 @@ fun SplitCard(
                 text = { 
                     Text("Are you sure you want to mark this payment as completed? This will notify ${currentSplit.expense?.lender?.name ?: "the lender"} to confirm your payment.") 
                 },
+                containerColor = Color.White,
                 confirmButton = {
                     Button(
                             onClick = {
@@ -280,13 +281,21 @@ fun SplitCard(
                                 } else {
                                     isRequestingPayment = false
                                 }
-                            }
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFF55BF6E)
+                            )
                     ) {
                         Text("Confirm")
                     }
                 },
                 dismissButton = {
-                    TextButton(onClick = { showPaymentDialog = false }) {
+                    TextButton(
+                        onClick = { showPaymentDialog = false },
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = Color.Black
+                        )
+                    ) {
                         Text("Cancel")
                     }
                 }
@@ -809,20 +818,6 @@ fun ExpenseCard(
                                             Row(
                                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                                             ) {
-                                                // Reject button
-                                                OutlinedButton(
-                                                    onClick = { 
-                                                        showConfirmDialog = null
-                                                        showRejectDialog = name
-                                                    },
-                                                    colors = ButtonDefaults.outlinedButtonColors(
-                                                        contentColor = MaterialTheme.colorScheme.error
-                                                    ),
-                                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.error)
-                                                ) {
-                                                    Text("Reject", fontSize = 12.sp)
-                                                }
-                                                
                                                 // Confirm button
                                                 Button(
                                                     onClick = {
@@ -844,9 +839,26 @@ fun ExpenseCard(
                                                                 isProcessing = false
                                                             }
                                                         }
-                                                    }
+                                                    },
+                                                    colors = ButtonDefaults.buttonColors(
+                                                        containerColor = Color(0xFF55BF6E)
+                                                    )
                                                 ) {
                                                     Text("Confirm", fontSize = 12.sp)
+                                                }
+                                                
+                                                // Reject button
+                                                OutlinedButton(
+                                                    onClick = { 
+                                                        showConfirmDialog = null
+                                                        showRejectDialog = name
+                                                    },
+                                                    colors = ButtonDefaults.outlinedButtonColors(
+                                                        contentColor = MaterialTheme.colorScheme.error
+                                                    ),
+                                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.error)
+                                                ) {
+                                                    Text("Reject", fontSize = 12.sp)
                                                 }
                                             }
                                         }
@@ -862,6 +874,41 @@ fun ExpenseCard(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
+                            Button(
+                                onClick = {
+                                    showConfirmDialog = null
+                                    isProcessing = true
+                                    
+                                    kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
+                                        try {
+                                            var successCount = 0
+                                            for (split in pendingSplits) {
+                                                if (currentUserId != null) {
+                                                    val result = ApiRepository.expenses.confirmPayment(split.id, currentUserId)
+                                                    result.fold(
+                                                        onSuccess = { successCount++ },
+                                                        onFailure = { /* Handle error */ }
+                                                    )
+                                                }
+                                            }
+                                            if (successCount > 0) {
+                                                onPaymentConfirmed()
+                                            }
+                                        } catch (e: Exception) {
+                                            println("Exception during bulk confirmation: ${e.message}")
+                                        } finally {
+                                            isProcessing = false
+                                        }
+                                    }
+                                },
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFF55BF6E)
+                                )
+                            ) {
+                                Text("Confirm All")
+                            }
+                            
                             OutlinedButton(
                                 onClick = {
                                     showConfirmDialog = null
@@ -897,44 +944,18 @@ fun ExpenseCard(
                             ) {
                                 Text("Reject All")
                             }
-                            
-                            Button(
-                                onClick = {
-                                    showConfirmDialog = null
-                                    isProcessing = true
-                                    
-                                    kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
-                                        try {
-                                            var successCount = 0
-                                            for (split in pendingSplits) {
-                                                if (currentUserId != null) {
-                                                    val result = ApiRepository.expenses.confirmPayment(split.id, currentUserId)
-                                                    result.fold(
-                                                        onSuccess = { successCount++ },
-                                                        onFailure = { /* Handle error */ }
-                                                    )
-                                                }
-                                            }
-                                            if (successCount > 0) {
-                                                onPaymentConfirmed()
-                                            }
-                                        } catch (e: Exception) {
-                                            println("Exception during bulk confirmation: ${e.message}")
-                                        } finally {
-                                            isProcessing = false
-                                        }
-                                    }
-                                },
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text("Confirm All")
-                            }
                         }
                     }
                 },
+                containerColor = Color.White,
                 confirmButton = {},
                 dismissButton = {
-                    TextButton(onClick = { showConfirmDialog = null }) {
+                    TextButton(
+                        onClick = { showConfirmDialog = null },
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = Color.Black
+                        )
+                    ) {
                         Text("Close")
                     }
                 }
@@ -950,6 +971,7 @@ fun ExpenseCard(
             text = { 
                 Text("Are you sure you want to reject this payment request from $debtorName? This will notify them that you haven't received the payment.") 
             },
+            containerColor = Color.White,
             confirmButton = {
                 Button(
                     onClick = {
@@ -984,7 +1006,12 @@ fun ExpenseCard(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showRejectDialog = null }) {
+                TextButton(
+                    onClick = { showRejectDialog = null },
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = Color.Black
+                    )
+                ) {
                     Text("Cancel")
                 }
             }
