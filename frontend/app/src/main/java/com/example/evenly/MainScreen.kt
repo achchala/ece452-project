@@ -180,11 +180,6 @@ fun MainScreen(
                                 selectedGroupId = groupId
                                 selectedScreen = Screen.GroupDetail
                             },
-                            onExpenseClick = { expense, groupMembers ->
-                                selectedExpense = expense
-                                selectedGroupMembers = groupMembers
-                                showExpenseDetailModal = true
-                            },
                             modifier = Modifier.padding(innerPadding)
                     )
                 }
@@ -208,6 +203,11 @@ fun MainScreen(
                                     selectedGroupName = groupName
                                     selectedGroupMembers = groupMembers
                                     selectedScreen = Screen.AddExpense
+                                },
+                                onExpenseClick = { expense, groupMembers ->
+                                    selectedExpense = expense
+                                    selectedGroupMembers = groupMembers
+                                    showExpenseDetailModal = true
                                 },
                                 modifier = Modifier.padding(innerPadding)
                         )
