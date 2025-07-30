@@ -37,7 +37,11 @@ fun CategorySelector(
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = if (enabled) expanded else false) },
             modifier = Modifier
                 .fillMaxWidth()
-                .menuAnchor()
+                .menuAnchor(),
+            colors = OutlinedTextFieldDefaults.colors(
+                unfocusedBorderColor = Color(0xFFFF7024),
+                focusedBorderColor = Color(0xFFFF7024)
+            )
         )
         
         ExposedDropdownMenu(

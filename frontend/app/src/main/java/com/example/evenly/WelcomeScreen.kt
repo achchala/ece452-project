@@ -22,21 +22,25 @@ fun WelcomeScreen(
     onAnimationComplete: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // Animation for circle expansion
+    var animationStarted by remember { mutableStateOf(false) }
+    
+    // Animation for circle expansion - starts from 0.0 and expands to 3.0 to fill most of the screen
     val circleScale by animateFloatAsState(
-        targetValue = 1f,
-        animationSpec = tween(2000, easing = EaseOutQuart),
+        targetValue = if (animationStarted) 3f else 0f,
+        animationSpec = tween(2000, easing = EaseOutExpo),
         label = "circleScale"
     )
     
     // Text fade in animation
     val textAlpha by animateFloatAsState(
-        targetValue = 1f,
+        targetValue = if (animationStarted) 1f else 0f,
         animationSpec = tween(1000, delayMillis = 500),
         label = "textAlpha"
     )
     
     LaunchedEffect(Unit) {
+        delay(100) // Small delay to ensure animation triggers
+        animationStarted = true
         delay(2000) // Wait for 2 seconds
         onAnimationComplete()
     }
@@ -51,7 +55,7 @@ fun WelcomeScreen(
         Box(
             modifier = Modifier
                 .size(200.dp)
-                .scale(circleScale)
+                .scale(circleScale) // Start from 0.0 and expand to 3.0
                 .clip(CircleShape)
                 .background(Color(0xFFFF7026)),
             contentAlignment = Alignment.Center
@@ -63,7 +67,7 @@ fun WelcomeScreen(
         Box(
             modifier = Modifier
                 .size(160.dp)
-                .scale(circleScale)
+                .scale(circleScale * 0.8f) // Slightly smaller than orange circle
                 .clip(CircleShape)
                 .background(Color(0xFF55BF6E)),
             contentAlignment = Alignment.Center

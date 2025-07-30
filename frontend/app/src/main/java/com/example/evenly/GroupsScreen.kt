@@ -8,6 +8,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -81,7 +82,9 @@ fun GroupsScreen(
             ) {
             if (isLoading) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
+                    CircularProgressIndicator(
+                        color = Color(0xFFFF7024) // Orange color
+                    )
                 }
             } else if (error != null) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -161,7 +164,8 @@ fun GroupCard(group: Group, onClick: () -> Unit, modifier: Modifier = Modifier) 
     Card(
         modifier = modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        onClick = onClick
+        onClick = onClick,
+        colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
         Row(
             modifier = Modifier
@@ -169,24 +173,35 @@ fun GroupCard(group: Group, onClick: () -> Unit, modifier: Modifier = Modifier) 
                 .padding(horizontal = 12.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // Green groups icon
+            Icon(
+                Icons.Default.Home,
+                contentDescription = "Group",
+                modifier = Modifier.size(24.dp),
+                tint = Color(0xFF4CAF50) // Green color
+            )
+            
+            Spacer(modifier = Modifier.width(12.dp))
+            
             Column(modifier = Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = group.name,
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.Black
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Icon(
                         Icons.Default.Person,
                         contentDescription = "Members",
                         modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.primary
+                        tint = Color(0xFF4CAF50) // Green color
                     )
                     Text(
                         text = "${group.members.size}",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = Color(0xFF4CAF50), // Green color
                         modifier = Modifier.padding(start = 2.dp)
                     )
                 }
@@ -194,14 +209,14 @@ fun GroupCard(group: Group, onClick: () -> Unit, modifier: Modifier = Modifier) 
                     Text(
                         text = group.description,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = Color(0xFF9E9E9E), // Light gray color
                         maxLines = 1
                     )
                 }
                 Text(
                     text = "Created ${group.createdAt.substring(0, 10)}",
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = Color(0xFF9E9E9E) // Light gray color
                 )
             }
         }

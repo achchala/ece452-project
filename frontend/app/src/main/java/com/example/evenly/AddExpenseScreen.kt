@@ -461,7 +461,7 @@ fun AddExpenseScreen(
                 if (isLoading) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(20.dp),
-                        color = Color.White
+                        color = Color(0xFFFF7024) // Orange color
                     )
                 } else {
                     Icon(Icons.Default.Check, contentDescription = null, tint = Color.White)
