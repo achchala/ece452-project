@@ -398,7 +398,7 @@ fun FriendsScreen(
                                                         )
                                                         Spacer(modifier = Modifier.height(16.dp))
                                                         Text(
-                                                            text = "No friends yet",
+                                                            text = "You could hear a pin drop.",
                                                             style = MaterialTheme.typography.headlineSmall,
                                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                                         )
@@ -515,12 +515,18 @@ fun FriendsScreen(
                                                         Icon(
                                                             imageVector = Icons.Default.Person,
                                                             contentDescription = null,
-                                                            modifier = Modifier.size(48.dp),
+                                                            modifier = Modifier.size(64.dp),
                                                             tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                                        )
+                                                        Spacer(modifier = Modifier.height(16.dp))
+                                                        Text(
+                                                            text = "It's looking dry.",
+                                                            style = MaterialTheme.typography.headlineSmall,
+                                                            color = MaterialTheme.colorScheme.onSurfaceVariant
                                                         )
                                                         Spacer(modifier = Modifier.height(8.dp))
                                                         Text(
-                                                            text = "No friend requests",
+                                                            text = "You'll see friend requests here",
                                                             style = MaterialTheme.typography.bodyMedium,
                                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                                         )
@@ -849,7 +855,8 @@ fun FriendRequestCard(
                     Button(
                         onClick = { onAccept(request.from_user) },
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary
+                            containerColor = Color(0xFF5BBD6C),
+                            contentColor = Color.White
                         ),
                         modifier = Modifier.height(32.dp)
                     ) {
@@ -862,7 +869,7 @@ fun FriendRequestCard(
                     OutlinedButton(
                         onClick = { onReject(request.from_user) },
                         colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = MaterialTheme.colorScheme.error
+                            contentColor = Color(0xFFFF7024)
                         ),
                         modifier = Modifier.height(32.dp)
                     ) {
