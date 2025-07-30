@@ -239,9 +239,13 @@ class ExpenseOperations:
         total_lent = sum(expense.get("total_amount", 0) for expense in lent_expenses)
         total_owed = sum(split.get("amount_owed", 0) for split in owed_splits)
 
+        # Calculate net amount (lent - owed)
+        net_amount = total_lent - total_owed
+
         return {
             "lent": {"total_amount": total_lent, "expenses": lent_expenses},
             "owed": {"total_amount": total_owed, "splits": owed_splits},
+            "net": {"total_amount": net_amount},
         }
 
     def update_expense(self, expense_id: str, data: Dict[str, Any]) -> Optional[Dict]:

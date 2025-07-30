@@ -331,9 +331,12 @@ fun AddExpenseScreen(
                         )
 
                         val currentUserEmail = firebaseUser?.email
-                        val borrowers = selectedMembers.filter { memberId ->
-                            val member = groupMembers.find { it.userId == memberId }
-                            member?.user?.email != currentUserEmail
+                        val allSelectedMembers = selectedMembers.toMutableSet()
+                        
+                        // Add current user to selected members if not already included
+                        val currentUserMember = groupMembers.find { it.user?.email == currentUserEmail }
+                        if (currentUserMember != null) {
+                            allSelectedMembers.add(currentUserMember.userId)
                         }
 
                         Text(
@@ -342,10 +345,12 @@ fun AddExpenseScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
 
-                        borrowers.forEach { memberId ->
+                        allSelectedMembers.forEach { memberId ->
                             val member = groupMembers.find { it.userId == memberId }
                             val memberName = member?.user?.name ?: "User #$memberId"
                             val currentAmount = customAmounts[memberId] ?: ""
+                            val isCurrentUser = member?.user?.email == currentUserEmail
+                            val labelText = if (isCurrentUser) "Your amount" else "Amount for $memberName"
                             
                             OutlinedTextField(
                                 value = currentAmount,
@@ -354,7 +359,7 @@ fun AddExpenseScreen(
                                         customAmounts = customAmounts + (memberId to newAmount)
                                     }
                                 },
-                                label = { Text("Amount for $memberName") },
+                                label = { Text(labelText) },
                                 modifier = Modifier.fillMaxWidth(),
                                 singleLine = true,
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
@@ -378,22 +383,37 @@ fun AddExpenseScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column {
+                            val currentUserEmail = firebaseUser?.email
+                            val allSelectedMembers = selectedMembers.toMutableSet()
+                            
+                            // Add current user to selected members if not already included
+                            val currentUserMember = groupMembers.find { it.user?.email == currentUserEmail }
+                            if (currentUserMember != null) {
+                                allSelectedMembers.add(currentUserMember.userId)
+                            }
+                            
+                            // Calculate total amount and number of people
+                            val totalAmount = amount.toDoubleOrNull() ?: 0.0
+                            
+                            // Use the size of allSelectedMembers which includes the current user
+                            val totalPeople = allSelectedMembers.size
+                            
                             Text(
-                                text = "You will pay: $${amount.toDoubleOrNull() ?: 0.0}",
+                                text = "The total bill is $${"%.2f".format(totalAmount)}",
                                 style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer
                             )
                             
-                            val currentUserEmail = firebaseUser?.email
-                            val borrowers = selectedMembers.filter { memberId ->
-                                val member = groupMembers.find { it.userId == memberId }
-                                member?.user?.email != currentUserEmail
-                            }
-                            
-                            if (borrowers.isNotEmpty()) {
+                            if (totalPeople > 1) {
                                 Text(
-                                    text = "Split between ${borrowers.size} people",
+                                    text = "Split between $totalPeople people (including you)",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            } else {
+                                Text(
+                                    text = "You're paying for this expense",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onPrimaryContainer
                                 )
@@ -504,13 +524,16 @@ private fun validateInputs(
     if (splitType == SplitType.CUSTOM) {
         val totalAmount = amount.toDoubleOrNull() ?: 0.0
         
-        // Calculate total from borrowers only (excluding the expense creator)
-        val borrowers = selectedMembers.filter { memberId ->
-            val member = groupMembers?.find { it.userId == memberId }
-            member?.user?.email != currentUserEmail
+        // Calculate total from all selected members (including the expense creator)
+        val allSelectedMembers = selectedMembers.toMutableSet()
+        
+        // Add current user to selected members if not already included
+        val currentUserMember = groupMembers?.find { it.user?.email == currentUserEmail }
+        if (currentUserMember != null) {
+            allSelectedMembers.add(currentUserMember.userId)
         }
         
-        val customTotal = borrowers.sumOf { memberId ->
+        val customTotal = allSelectedMembers.sumOf { memberId ->
             customAmounts[memberId]?.toDoubleOrNull() ?: 0.0
         }
         
@@ -560,37 +583,44 @@ private suspend fun addExpense(
         
         val dueDateString = dueDate?.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
 
-        // Get current user's email to exclude them from splits
+        // Get current user's email and include them in splits
         val currentUserEmail = firebaseUser.email
-        val borrowers = selectedMembers.filter { memberId ->
-            val member = groupMembers.find { it.userId == memberId }
-            member?.user?.email != currentUserEmail
+        val allSelectedMembers = selectedMembers.toMutableSet()
+        
+        // Add current user to selected members if not already included
+        val currentUserMember = groupMembers.find { it.user?.email == currentUserEmail }
+        if (currentUserMember != null) {
+            allSelectedMembers.add(currentUserMember.userId)
         }
 
         when (splitType) {
             SplitType.EQUAL -> {
-                if (borrowers.isNotEmpty()) {
-                    val amountPerPerson = totalAmountCents / borrowers.size
-                    val remainder = totalAmountCents % borrowers.size
+                if (allSelectedMembers.isNotEmpty()) {
+                    val amountPerPerson = totalAmountCents / allSelectedMembers.size
+                    val remainder = totalAmountCents % allSelectedMembers.size
                     
-                    borrowers.forEachIndexed { index, memberId ->
+                    allSelectedMembers.forEachIndexed { index, memberId ->
                         val member = groupMembers.find { it.userId == memberId }
                         val memberEmail = member?.user?.email
                         if (memberEmail != null) {
                             val splitAmount = amountPerPerson + if (index < remainder) 1 else 0
-                            splits.add(ExpenseSplit(memberEmail, splitAmount))
+                            // If this is the current user, make their amount negative (they get credited)
+                            val finalAmount = if (memberEmail == currentUserEmail) -splitAmount else splitAmount
+                            splits.add(ExpenseSplit(memberEmail, finalAmount))
                         }
                     }
                 }
             }
             SplitType.CUSTOM -> {
-                borrowers.forEach { memberId ->
+                allSelectedMembers.forEach { memberId ->
                     val member = groupMembers.find { it.userId == memberId }
                     val memberEmail = member?.user?.email
                     val customAmount = customAmounts[memberId] ?: "0"
                     if (memberEmail != null) {
                         val splitAmount = (customAmount.toDouble() * 100).toInt()
-                        splits.add(ExpenseSplit(memberEmail, splitAmount))
+                        // If this is the current user, make their amount negative (they get credited)
+                        val finalAmount = if (memberEmail == currentUserEmail) -splitAmount else splitAmount
+                        splits.add(ExpenseSplit(memberEmail, finalAmount))
                     }
                 }
             }

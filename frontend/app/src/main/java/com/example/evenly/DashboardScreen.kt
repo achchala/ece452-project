@@ -462,7 +462,8 @@ fun DashboardScreen(
                         item {
                             TotalSummaryCard(
                                     totalLent = data.lent.totalAmount,
-                                    totalOwed = data.owed.totalAmount
+                                    totalOwed = data.owed.totalAmount,
+                                    netAmount = data.net?.totalAmount
                             )
                         }
 
@@ -499,12 +500,12 @@ fun DashboardScreen(
 
 
 @Composable
-fun TotalSummaryCard(totalLent: Long, totalOwed: Long, modifier: Modifier = Modifier) {
+fun TotalSummaryCard(totalLent: Long, totalOwed: Long, netAmount: Long? = null, modifier: Modifier = Modifier) {
     Row(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // You are owed card
+        // Net Balance card
         Card(
             modifier = Modifier.weight(1f),
             colors = CardDefaults.cardColors(
@@ -522,11 +523,13 @@ fun TotalSummaryCard(totalLent: Long, totalOwed: Long, modifier: Modifier = Modi
                     color = Color.Gray
                 )
                 Spacer(modifier = Modifier.height(4.dp))
+                val lentValue = totalLent
+                val lentColor = if (lentValue >= 0) Color(0xFF2E7D32) else MaterialTheme.colorScheme.error
                 Text(
-                    text = "$${"%.2f".format(totalLent / 100.0)}",
+                    text = "$${"%.2f".format(lentValue / 100.0)}",
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF2E7D32)
+                    color = lentColor
                 )
             }
         }

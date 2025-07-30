@@ -7,7 +7,8 @@ import com.google.gson.annotations.SerializedName
  */
 data class DashboardResponse(
     val lent: LentData,
-    val owed: OwedData
+    val owed: OwedData,
+    val net: NetData? = null
 )
 
 /**
@@ -26,6 +27,14 @@ data class OwedData(
     @SerializedName("total_amount")
     val totalAmount: Long,
     val splits: List<Split>
+)
+
+/**
+ * Data model for net amount section
+ */
+data class NetData(
+    @SerializedName("total_amount")
+    val totalAmount: Long
 )
 
 /**

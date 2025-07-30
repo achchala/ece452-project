@@ -59,10 +59,18 @@ class ExpensesView(viewsets.ViewSet):
                     # Get user by email
                     split_user = supabase.users.get_by_email(user_email)
                     if split_user:
+                        # Handle negative amounts (credits for expense creator)
+                        # If amount is negative, it means the user is getting credited for their portion
+                        # We store the absolute value but mark it as a credit
+                        actual_amount = abs(amount_owed)
                         split_data = supabase.expenses.create_split(
-                            expense_id, split_user.get("id"), amount_owed
+                            expense_id, split_user.get("id"), actual_amount
                         )
                         if split_data:
+                            # If this is a credit (negative amount), mark it as paid
+                            if amount_owed < 0:
+                                # Mark the split as paid since the creator is getting credited
+                                supabase.expenses.confirm_payment(split_data.get("id"), created_by)
                             created_splits.append(split_data)
 
         # Update group budget if group_id is provided
