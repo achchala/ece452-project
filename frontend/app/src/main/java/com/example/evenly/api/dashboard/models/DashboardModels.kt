@@ -67,8 +67,13 @@ data class Expense(
  * A model representing a split for a lent expense, showing who owes money.
  */
 data class DebtorSplit(
+    val id: String,
     @SerializedName("amount_owed")
     val amountOwed: Long,
+    @SerializedName("paid_request")
+    val paidRequest: String? = null,
+    @SerializedName("paid_confirmed")
+    val paidConfirmed: String? = null,
     val debtor: Debtor?
 )
 
@@ -76,7 +81,9 @@ data class DebtorSplit(
  * A simple model for the user who owes money (the debtor).
  */
 data class Debtor(
-    val name: String?
+    val name: String?,
+    @SerializedName("payment_status")
+    val paymentStatus: String? = null
 )
 
 /**
@@ -90,6 +97,10 @@ data class Split(
     val userId: String,
     @SerializedName("amount_owed")
     val amountOwed: Long,
+    @SerializedName("paid_request")
+    val paidRequest: String? = null,
+    @SerializedName("paid_confirmed")
+    val paidConfirmed: String? = null,
     val expense: OwedExpenseDetails? = null
 )
 

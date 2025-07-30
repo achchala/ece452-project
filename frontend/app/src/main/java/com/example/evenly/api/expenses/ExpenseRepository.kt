@@ -96,4 +96,63 @@ class ExpenseRepository(private val expenseApiService: ExpenseApiService) {
             Result.failure(e)
         }
     }
+
+    suspend fun requestPaymentConfirmation(splitId: String, userId: String): Result<PaymentRequestResponse> {
+        return try {
+            val request = PaymentRequestRequest(splitId, userId)
+            val response = expenseApiService.requestPaymentConfirmation(request)
+            
+            if (response.isSuccessful) {
+                Result.success(response.body()!!)
+            } else {
+                Result.failure(Exception("Failed to request payment confirmation: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun confirmPayment(splitId: String, lenderId: String): Result<PaymentConfirmResponse> {
+        return try {
+            val request = PaymentConfirmRequest(splitId, lenderId)
+            val response = expenseApiService.confirmPayment(request)
+            
+            if (response.isSuccessful) {
+                Result.success(response.body()!!)
+            } else {
+                Result.failure(Exception("Failed to confirm payment: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun rejectPayment(splitId: String, lenderId: String): Result<PaymentRejectResponse> {
+        return try {
+            val request = PaymentRejectRequest(splitId, lenderId)
+            val response = expenseApiService.rejectPayment(request)
+            
+            if (response.isSuccessful) {
+                Result.success(response.body()!!)
+            } else {
+                Result.failure(Exception("Failed to reject payment: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getPendingPaymentRequests(lenderId: String): Result<PendingPaymentRequestsResponse> {
+        return try {
+            val response = expenseApiService.getPendingPaymentRequests(lenderId)
+            
+            if (response.isSuccessful) {
+                Result.success(response.body()!!)
+            } else {
+                Result.failure(Exception("Failed to get pending payment requests: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 } 
