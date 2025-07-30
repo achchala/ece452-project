@@ -77,7 +77,7 @@ fun QuickActionsSection(
                 modifier = Modifier.fillMaxWidth(),
                 colors =
                         CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.primaryContainer
+                                containerColor = Color(0xFFFF7024)
                         ),
                 onClick = onCreateGroup
         ) {
@@ -89,13 +89,13 @@ fun QuickActionsSection(
                         text = "Create Group",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                        color = Color.White
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                         text = "Start a new group",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                        color = Color.White
                 )
             }
         }
@@ -456,32 +456,60 @@ fun DashboardScreen(
 
 @Composable
 fun TotalSummaryCard(totalLent: Long, totalOwed: Long, modifier: Modifier = Modifier) {
-    Card(
-            modifier = modifier.fillMaxWidth(),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Row(
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceAround
+        // You are owed card
+        Card(
+            modifier = Modifier.weight(1f),
+            colors = CardDefaults.cardColors(
+                containerColor = Color.White
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(text = "You are owed", style = MaterialTheme.typography.labelLarge)
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "You are owed", 
+                    style = MaterialTheme.typography.labelLarge,
+                    color = Color.Gray
+                )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                        text = "$${"%.2f".format(totalLent / 100.0)}",
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF2E7D32)
+                    text = "$${"%.2f".format(totalLent / 100.0)}",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF2E7D32)
                 )
             }
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(text = "You owe", style = MaterialTheme.typography.labelLarge)
+        }
+        
+        // You owe card
+        Card(
+            modifier = Modifier.weight(1f),
+            colors = CardDefaults.cardColors(
+                containerColor = Color.White
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "You owe", 
+                    style = MaterialTheme.typography.labelLarge,
+                    color = Color.Gray
+                )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                        text = "$${"%.2f".format(totalOwed / 100.0)}",
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.error
+                    text = "$${"%.2f".format(totalOwed / 100.0)}",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.error
                 )
             }
         }
@@ -595,11 +623,11 @@ fun ExpenseCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(
-                    top = if (pendingCount > 0) 8.dp else 0.dp,
-                    end = if (pendingCount > 0) 8.dp else 0.dp
+                    top = 8.dp,
+                    end = 8.dp
                 ),
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant
+                containerColor = Color.White
             ),
             elevation = CardDefaults.cardElevation(
                 defaultElevation = if (pendingCount > 0) 4.dp else 2.dp
@@ -711,7 +739,7 @@ fun ExpenseCard(
                     .align(Alignment.TopEnd)
                     .size(20.dp)
                     .background(
-                        color = Color(0xFFD32F2F),
+                        color = Color(0xFFFF7024),
                         shape = CircleShape
                     ),
                 contentAlignment = Alignment.Center
