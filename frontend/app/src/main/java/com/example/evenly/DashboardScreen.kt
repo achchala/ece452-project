@@ -207,7 +207,7 @@ fun SplitCard(
                             CircularProgressIndicator(
                                     modifier = Modifier.size(16.dp),
                                     strokeWidth = 2.dp,
-                                    color = MaterialTheme.colorScheme.onPrimary
+                                    color = Color(0xFFFF7024) // Orange color
                             )
                         } else {
                             Text(
@@ -401,7 +401,9 @@ fun DashboardScreen(
 
             if (isLoading) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
+                    CircularProgressIndicator(
+                        color = Color(0xFFFF7024) // Orange color
+                    )
                 }
             } else if (error != null) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {

@@ -381,7 +381,9 @@ fun FriendsScreen(
                                         modifier = Modifier.fillMaxSize(),
                                         contentAlignment = Alignment.Center
                                     ) {
-                                        CircularProgressIndicator()
+                                        CircularProgressIndicator(
+                                            color = Color(0xFFFF7024) // Orange color
+                                        )
                                     }
                                 } else if (error != null) {
                                     Box(
@@ -517,7 +519,9 @@ fun FriendsScreen(
                                         modifier = Modifier.fillMaxSize(),
                                         contentAlignment = Alignment.Center
                                     ) {
-                                        CircularProgressIndicator()
+                                        CircularProgressIndicator(
+                                            color = Color(0xFFFF7024) // Orange color
+                                        )
                                     }
                                 } else if (error != null) {
                                     Box(
@@ -764,7 +768,7 @@ fun FriendsScreen(
                     if (isAddingFriend) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(16.dp),
-                            color = Color.White
+                            color = Color(0xFFFF7024) // Orange color
                         )
                     } else {
                         Text("Send Request")
@@ -811,7 +815,9 @@ fun FriendsScreen(
                         modifier = Modifier.fillMaxWidth(),
                         contentAlignment = Alignment.Center
                     ) {
-                        CircularProgressIndicator()
+                        CircularProgressIndicator(
+                            color = Color(0xFFFF7024) // Orange color
+                        )
                     }
                 },
                 confirmButton = { }

@@ -12,6 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -138,12 +139,20 @@ fun ExpenseDetailModal(
                                 IconButton(
                                     onClick = { showDeleteDialog = true }
                                 ) {
-                                    Icon(Icons.Default.Delete, contentDescription = "Delete")
+                                    Icon(
+                                        Icons.Default.Delete, 
+                                        contentDescription = "Delete",
+                                        tint = Color(0xFFFF7024) // Orange color
+                                    )
                                 }
                             }
                             // Close button
                             IconButton(onClick = onDismiss) {
-                                Icon(Icons.Default.Close, contentDescription = "Close")
+                                Icon(
+                                    Icons.Default.Close, 
+                                    contentDescription = "Close",
+                                    tint = Color(0xFFFF7024) // Orange color
+                                )
                             }
                         }
                     }
@@ -179,7 +188,7 @@ fun ExpenseDetailModal(
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant
+                            containerColor = Color.White
                         )
                     ) {
                         Column(
@@ -216,7 +225,11 @@ fun ExpenseDetailModal(
                                     label = { Text("Title") },
                                     modifier = Modifier.weight(1f),
                                     singleLine = true,
-                                    readOnly = !isCreator
+                                    readOnly = !isCreator,
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        unfocusedBorderColor = Color(0xFFFF7024),
+                                        focusedBorderColor = Color(0xFFFF7024)
+                                    )
                                 )
                                 
                                 OutlinedTextField(
@@ -230,7 +243,11 @@ fun ExpenseDetailModal(
                                     modifier = Modifier.weight(1f),
                                     singleLine = true,
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                                    readOnly = !isCreator
+                                    readOnly = !isCreator,
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        unfocusedBorderColor = Color(0xFFFF7024),
+                                        focusedBorderColor = Color(0xFFFF7024)
+                                    )
                                 )
                             }
 
@@ -254,7 +271,11 @@ fun ExpenseDetailModal(
                                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = if (isCreator) dueDateDropdownExpanded else false) },
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .menuAnchor()
+                                        .menuAnchor(),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        unfocusedBorderColor = Color(0xFFFF7024),
+                                        focusedBorderColor = Color(0xFFFF7024)
+                                    )
                                 )
                                 
                                 ExposedDropdownMenu(
@@ -291,13 +312,20 @@ fun ExpenseDetailModal(
                                         onValueChange = { },
                                         label = { Text("Custom Date") },
                                         modifier = Modifier.weight(1f),
-                                        readOnly = true
+                                        readOnly = true,
+                                        colors = OutlinedTextFieldDefaults.colors(
+                                            unfocusedBorderColor = Color(0xFFFF7024),
+                                            focusedBorderColor = Color(0xFFFF7024)
+                                        )
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Button(
                                         onClick = { if (isCreator) showDatePicker = true },
                                         modifier = Modifier.height(56.dp),
-                                        enabled = isCreator
+                                        enabled = isCreator,
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = Color(0xFFFF7024)
+                                        )
                                     ) {
                                         Text("Pick")
                                     }
@@ -335,7 +363,7 @@ fun ExpenseDetailModal(
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant
+                            containerColor = Color.White
                         )
                     ) {
                         Column(
@@ -380,7 +408,7 @@ fun ExpenseDetailModal(
                                             text = "$${"%.2f".format(split.amountOwed / 100.0)}",
                                             style = MaterialTheme.typography.bodyMedium,
                                             fontWeight = FontWeight.Bold,
-                                            color = MaterialTheme.colorScheme.primary
+                                            color = Color(0xFFFF7024) // Orange color
                                         )
                                     }
                                     
@@ -428,13 +456,16 @@ fun ExpenseDetailModal(
                             }
                         },
                         modifier = Modifier.fillMaxWidth(),
-                        enabled = !isLoading
+                        enabled = !isLoading,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFFFF7024)
+                        )
                     ) {
                         if (isLoading) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(20.dp),
-                                color = MaterialTheme.colorScheme.onPrimary
-                            )
+                                                    CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            color = Color(0xFFFF7024) // Orange color
+                        )
                         } else {
                             Icon(Icons.Default.Check, contentDescription = null)
                             Spacer(modifier = Modifier.width(8.dp))

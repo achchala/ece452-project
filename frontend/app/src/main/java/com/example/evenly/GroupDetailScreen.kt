@@ -1,5 +1,6 @@
 package com.example.evenly
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -265,7 +266,9 @@ fun GroupDetailScreen(
             if (isLoadingExpenses) {
                 item {
                     Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
+                        CircularProgressIndicator(
+                            color = Color(0xFFFF7024) // Orange color
+                        )
                     }
                 }
             } else if (expenses.isEmpty()) {
@@ -309,13 +312,15 @@ fun GroupDetailScreen(
 fun GroupInfoCard(group: Group, modifier: Modifier = Modifier) {
     Card(
             modifier = modifier.fillMaxWidth(),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
             Text(
                     text = group.name,
                     style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
             )
 
             if (!group.description.isNullOrBlank()) {
@@ -323,7 +328,7 @@ fun GroupInfoCard(group: Group, modifier: Modifier = Modifier) {
                 Text(
                         text = group.description,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = Color(0xFF9E9E9E) // Light gray color
                 )
             }
 
@@ -360,12 +365,12 @@ fun GroupInfoCard(group: Group, modifier: Modifier = Modifier) {
                 Text(
                         text = "Created ${group.createdAt.substring(0, 10)}",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = Color(0xFF9E9E9E) // Light gray color
                 )
                 Text(
                         text = "${group.members.size} members",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = Color(0xFF9E9E9E) // Light gray color
                 )
             }
         }
@@ -376,39 +381,43 @@ fun GroupInfoCard(group: Group, modifier: Modifier = Modifier) {
 fun MemberCard(member: GroupMember, modifier: Modifier = Modifier) {
     Card(
             modifier = modifier.fillMaxWidth(),
-            colors =
-                    CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant
-                    ),
+            colors = CardDefaults.cardColors(
+                    containerColor = Color.White
+            ),
             elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Row(
-                modifier = Modifier.fillMaxWidth().padding(10.dp),
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                    Icons.Default.Person,
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(
+                        color = Color(0xFFA6DB93),
+                        shape = androidx.compose.foundation.shape.CircleShape
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Person,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(20.dp)
-            )
-
-            Spacer(modifier = Modifier.width(10.dp))
-
+                    modifier = Modifier.size(24.dp),
+                    tint = Color.White
+                )
+            }
+            Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                            text = member.user?.name ?: "User #${member.userId}",
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Medium
-                    )
-                    // Note: We need to pass the group's creatorId to this component
-                    // For now, we'll show admin status in a different way
-                }
                 Text(
-                        text = member.user?.email ?: "Joined ${member.joinedAt.substring(0, 10)}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text = member.user?.name ?: "User #${member.userId}",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Medium,
+                    color = Color.Black
+                )
+                Text(
+                    text = member.user?.email ?: "Joined ${member.joinedAt.substring(0, 10)}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.Gray
                 )
             }
         }
@@ -431,7 +440,9 @@ fun AddFriendDialog(
             text = {
                 if (isLoading) {
                     Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
+                        CircularProgressIndicator(
+                            color = Color(0xFFFF7024) // Orange color
+                        )
                     }
                 } else if (availableFriends.isEmpty()) {
                     Column(
@@ -600,11 +611,7 @@ fun ExpenseCard(
             .fillMaxWidth()
             .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(
-            containerColor = if (isFullyPaid) {
-                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
-            } else {
-                MaterialTheme.colorScheme.surfaceVariant
-            }
+            containerColor = Color.White
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
