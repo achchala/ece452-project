@@ -48,6 +48,7 @@ fun MainScreen(
     var selectedGroupMembers by remember { mutableStateOf<List<GroupMember>?>(null) }
     var selectedExpense by remember { mutableStateOf<com.example.evenly.api.expenses.models.Expense?>(null) }
     var showExpenseDetailModal by remember { mutableStateOf(false) }
+    var refreshCounter by remember { mutableStateOf(0) }
 
     Box(
         modifier = Modifier
@@ -209,7 +210,8 @@ fun MainScreen(
                                     selectedGroupMembers = groupMembers
                                     showExpenseDetailModal = true
                                 },
-                                modifier = Modifier.padding(innerPadding)
+                                modifier = Modifier.padding(innerPadding),
+                                key = refreshCounter // Force refresh when refreshCounter changes
                         )
                     }
                 }
@@ -241,8 +243,20 @@ fun MainScreen(
                 expense = selectedExpense!!,
                 groupMembers = groupMembers,
                 onDismiss = { showExpenseDetailModal = false },
-                onExpenseUpdated = { showExpenseDetailModal = false },
-                onExpenseDeleted = { showExpenseDetailModal = false }
+                onExpenseUpdated = { 
+                    showExpenseDetailModal = false
+                    // Force refresh of the group detail screen by updating the selectedExpense
+                    selectedExpense = null
+                    // Increment refresh counter to trigger recomposition
+                    refreshCounter++
+                },
+                onExpenseDeleted = { 
+                    showExpenseDetailModal = false
+                    // Force refresh of the group detail screen by updating the selectedExpense
+                    selectedExpense = null
+                    // Increment refresh counter to trigger recomposition
+                    refreshCounter++
+                }
             )
         }
     }

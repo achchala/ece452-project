@@ -206,8 +206,13 @@ fun ExpenseDetailModal(
                                     fontWeight = FontWeight.Medium
                                 )
                                 if (!isCreator) {
+                                    // Try to find creator name from group members using createdBy ID
+                                    val creatorName = expense.creator?.name ?: 
+                                        groupMembers.find { it.userId == expense.createdBy }?.user?.name ?: 
+                                        "Unknown"
+                                    
                                     Text(
-                                        text = "Created by: ${expense.creator?.name ?: "Unknown"}",
+                                        text = "Created by: $creatorName",
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -333,10 +338,23 @@ fun ExpenseDetailModal(
 
                                 if (showDatePicker) {
                                     val today = LocalDate.now()
+                                    val datePickerState = rememberDatePickerState(
+                                        initialSelectedDateMillis = customDueDate?.toEpochDay()?.let { it * 24 * 60 * 60 * 1000 } 
+                                            ?: (today.plusDays(1).toEpochDay() * 24 * 60 * 60 * 1000)
+                                    )
+                                    
                                     DatePickerDialog(
                                         onDismissRequest = { showDatePicker = false },
                                         confirmButton = {
-                                            TextButton(onClick = { showDatePicker = false }) {
+                                            TextButton(
+                                                onClick = { 
+                                                    // Update customDueDate when OK is clicked
+                                                    datePickerState.selectedDateMillis?.let { millis ->
+                                                        customDueDate = LocalDate.ofEpochDay(millis / (24 * 60 * 60 * 1000))
+                                                    }
+                                                    showDatePicker = false 
+                                                }
+                                            ) {
                                                 Text("OK")
                                             }
                                         },
@@ -347,10 +365,7 @@ fun ExpenseDetailModal(
                                         }
                                     ) {
                                         DatePicker(
-                                            state = rememberDatePickerState(
-                                                initialSelectedDateMillis = customDueDate?.toEpochDay()?.let { it * 24 * 60 * 60 * 1000 } 
-                                                    ?: (today.plusDays(1).toEpochDay() * 24 * 60 * 60 * 1000)
-                                            ),
+                                            state = datePickerState,
                                             showModeToggle = false
                                         )
                                     }
@@ -384,8 +399,21 @@ fun ExpenseDetailModal(
                                 )
                             } else {
                                 expense.splits.forEach { split ->
-                                    // Find the user name from group members
-                                    val userName = groupMembers.find { it.userId == split.userId }?.user?.name ?: "Unknown User"
+                                    // Debug logging
+                                    println("Split userId: ${split.userId}")
+                                    println("Group members: ${groupMembers.map { "${it.userId} -> ${it.user?.name}" }}")
+                                    
+                                    // Find the user name from group members using userId
+                                    val matchingMember = groupMembers.find { it.userId == split.userId }
+                                    val userName = if (matchingMember != null) {
+                                        matchingMember.user?.name ?: "Unknown User"
+                                    } else {
+                                        // Try to find by user email if available
+                                        split.debtor?.name ?: "Unknown User"
+                                    }
+                                    
+                                    println("Matching member: $matchingMember")
+                                    println("Final userName: $userName")
                                     
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
@@ -563,7 +591,8 @@ private suspend fun updateExpense(
         )
 
         result.fold(
-            onSuccess = {
+            onSuccess = { response ->
+                // Return the updated expense data
                 onSuccess()
             },
             onFailure = { exception ->
