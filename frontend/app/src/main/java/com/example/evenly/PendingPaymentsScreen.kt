@@ -185,12 +185,23 @@ fun PendingPaymentCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                OutlinedButton(
+                    onClick = { showRejectDialog = true },
+                    enabled = !isProcessing,
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("Reject")
+                }
+
                 Button(
                     onClick = { showConfirmDialog = true },
                     enabled = !isProcessing,
                     modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF2E7D32)
+                        containerColor = Color(0xFF55BF6E)
                     )
                 ) {
                     if (isProcessing) {
@@ -202,17 +213,6 @@ fun PendingPaymentCard(
                     } else {
                         Text("Confirm Payment")
                     }
-                }
-
-                OutlinedButton(
-                    onClick = { showRejectDialog = true },
-                    enabled = !isProcessing,
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = MaterialTheme.colorScheme.error
-                    )
-                ) {
-                    Text("Reject")
                 }
             }
         }
@@ -226,38 +226,47 @@ fun PendingPaymentCard(
             text = { 
                 Text("Are you sure you want to confirm that ${request.debtor.name} has paid you $${"%.2f".format(request.amountOwed / 100.0)} for '${request.expense.title}'?") 
             },
+            containerColor = Color.White,
             confirmButton = {
                 Button(
-                                            onClick = {
-                            showConfirmDialog = false
-                            isProcessing = true
-                            
-                            // Launch in coroutine to handle async operation
-                            kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
-                                try {
-                                    val result = ApiRepository.expenses.confirmPayment(request.id, lenderId)
-                                    result.fold(
-                                        onSuccess = { 
-                                            onConfirm() // Refresh the list
-                                        },
-                                        onFailure = { exception ->
-                                            // Handle error - you might want to show a snackbar
-                                            println("Payment confirmation failed: ${exception.message}")
-                                        }
-                                    )
-                                } catch (e: Exception) {
-                                    println("Exception during payment confirmation: ${e.message}")
-                                } finally {
-                                    isProcessing = false
-                                }
+                    onClick = {
+                        showConfirmDialog = false
+                        isProcessing = true
+                        
+                        // Launch in coroutine to handle async operation
+                        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
+                            try {
+                                val result = ApiRepository.expenses.confirmPayment(request.id, lenderId)
+                                result.fold(
+                                    onSuccess = { 
+                                        onConfirm() // Refresh the list
+                                    },
+                                    onFailure = { exception ->
+                                        // Handle error - you might want to show a snackbar
+                                        println("Payment confirmation failed: ${exception.message}")
+                                    }
+                                )
+                            } catch (e: Exception) {
+                                println("Exception during payment confirmation: ${e.message}")
+                            } finally {
+                                isProcessing = false
                             }
                         }
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF55BF6E)
+                    )
                 ) {
                     Text("Confirm")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showConfirmDialog = false }) {
+                TextButton(
+                    onClick = { showConfirmDialog = false },
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = Color.Black
+                    )
+                ) {
                     Text("Cancel")
                 }
             }
@@ -272,32 +281,33 @@ fun PendingPaymentCard(
             text = { 
                 Text("Are you sure you want to reject this payment request? This will notify ${request.debtor.name} that you haven't received the payment.") 
             },
+            containerColor = Color.White,
             confirmButton = {
                 Button(
-                                            onClick = {
-                            showRejectDialog = false
-                            isProcessing = true
-                            
-                            // Launch in coroutine to handle async operation
-                            kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
-                                try {
-                                    val result = ApiRepository.expenses.rejectPayment(request.id, lenderId)
-                                    result.fold(
-                                        onSuccess = { 
-                                            onReject() // Refresh the list
-                                        },
-                                        onFailure = { exception ->
-                                            // Handle error - you might want to show a snackbar
-                                            println("Payment rejection failed: ${exception.message}")
-                                        }
-                                    )
-                                } catch (e: Exception) {
-                                    println("Exception during payment rejection: ${e.message}")
-                                } finally {
-                                    isProcessing = false
-                                }
+                    onClick = {
+                        showRejectDialog = false
+                        isProcessing = true
+                        
+                        // Launch in coroutine to handle async operation
+                        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
+                            try {
+                                val result = ApiRepository.expenses.rejectPayment(request.id, lenderId)
+                                result.fold(
+                                    onSuccess = { 
+                                        onReject() // Refresh the list
+                                    },
+                                    onFailure = { exception ->
+                                        // Handle error - you might want to show a snackbar
+                                        println("Payment rejection failed: ${exception.message}")
+                                    }
+                                )
+                            } catch (e: Exception) {
+                                println("Exception during payment rejection: ${e.message}")
+                            } finally {
+                                isProcessing = false
                             }
-                        },
+                        }
+                    },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.error
                     )
@@ -306,7 +316,12 @@ fun PendingPaymentCard(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showRejectDialog = false }) {
+                TextButton(
+                    onClick = { showRejectDialog = false },
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = Color.Black
+                    )
+                ) {
                     Text("Cancel")
                 }
             }
