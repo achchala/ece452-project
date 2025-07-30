@@ -24,6 +24,8 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 import androidx.compose.foundation.BorderStroke
+import com.example.evenly.ui.theme.TopBackgroundColor
+import com.example.evenly.ui.theme.BottomBackgroundColor
 
 // Helper function to format due dates
 data class DueDateInfo(
