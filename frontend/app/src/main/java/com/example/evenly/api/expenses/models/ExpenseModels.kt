@@ -80,7 +80,15 @@ data class Split(
     @SerializedName("expenseid") val expenseId: String,
     @SerializedName("userid") val userId: String,
     @SerializedName("amount_owed") val amountOwed: Int,
-    @SerializedName("created_at") val createdAt: String
+    @SerializedName("created_at") val createdAt: String,
+    @SerializedName("paid_request") val paidRequest: String? = null,
+    @SerializedName("paid_confirmed") val paidConfirmed: String? = null,
+    @SerializedName("debtor") val debtor: Debtor? = null
+)
+
+data class Debtor(
+    @SerializedName("name") val name: String,
+    @SerializedName("payment_status") val paymentStatus: String? = null
 )
 
 data class ExpenseSplit(

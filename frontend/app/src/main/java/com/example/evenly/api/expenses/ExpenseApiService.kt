@@ -15,14 +15,24 @@ import com.example.evenly.api.expenses.models.UpdateExpenseRequest
 import com.example.evenly.api.expenses.models.UpdateExpenseResponse
 import com.example.evenly.api.expenses.models.DeleteExpenseRequest
 import com.example.evenly.api.expenses.models.DeleteExpenseResponse
+import com.example.evenly.api.expenses.models.PaymentRequestRequest
+import com.example.evenly.api.expenses.models.PaymentRequestResponse
+import com.example.evenly.api.expenses.models.PaymentConfirmRequest
+import com.example.evenly.api.expenses.models.PaymentConfirmResponse
+import com.example.evenly.api.expenses.models.PaymentRejectRequest
+import com.example.evenly.api.expenses.models.PaymentRejectResponse
+import com.example.evenly.api.expenses.models.PendingPaymentRequestsResponse
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.DELETE
 import retrofit2.http.Path
+import retrofit2.http.Query
 
 interface ExpenseApiService {
+
     @POST("/api/expenses/create/")
     suspend fun createExpense(@Body request: CreateExpenseRequest): Response<CreateExpenseResponse>
 
@@ -39,10 +49,9 @@ interface ExpenseApiService {
     suspend fun getDashboardData(@Body request: GetDashboardDataRequest): Response<GetDashboardDataResponse>
 
     @POST("/api/expenses/expense-notification/")
-    suspend fun addedToExpenseNotification(
-        @Body request: ExpenseNotificationRequest
-    ): Response<Unit>
+    suspend fun addedToExpenseNotification(@Body request: ExpenseNotificationRequest): Response<Unit>
 
+    // ✅ Update & Delete Expense
     @PUT("/api/expenses/{expenseId}/update/")
     suspend fun updateExpense(
         @Path("expenseId") expenseId: String,
@@ -54,4 +63,17 @@ interface ExpenseApiService {
         @Path("expenseId") expenseId: String,
         @Body request: DeleteExpenseRequest
     ): Response<DeleteExpenseResponse>
-} 
+
+    // ✅ Payment-related Endpoints
+    @POST("/api/expenses/request-payment/")
+    suspend fun requestPaymentConfirmation(@Body request: PaymentRequestRequest): Response<PaymentRequestResponse>
+
+    @POST("/api/expenses/confirm-payment/")
+    suspend fun confirmPayment(@Body request: PaymentConfirmRequest): Response<PaymentConfirmResponse>
+
+    @POST("/api/expenses/reject-payment/")
+    suspend fun rejectPayment(@Body request: PaymentRejectRequest): Response<PaymentRejectResponse>
+
+    @GET("/api/expenses/pending-payments/")
+    suspend fun getPendingPaymentRequests(@Query("lender_id") lenderId: String): Response<PendingPaymentRequestsResponse>
+}

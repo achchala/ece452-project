@@ -41,7 +41,7 @@ class MainActivity : ComponentActivity() {
         val userId = intent.getStringExtra("user_id") ?: ""
 
         setContent {
-            HelloWorldTheme {
+            HelloWorldTheme(dynamicColor = false) {
                 MainScreen(
                         userId = userId,
                         userName = userName,
