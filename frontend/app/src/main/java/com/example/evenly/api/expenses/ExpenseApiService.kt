@@ -11,6 +11,10 @@ import com.example.evenly.api.expenses.models.GetUserGroupExpensesRequest
 import com.example.evenly.api.expenses.models.GetUserGroupExpensesResponse
 import com.example.evenly.api.expenses.models.GetDashboardDataRequest
 import com.example.evenly.api.expenses.models.GetDashboardDataResponse
+import com.example.evenly.api.expenses.models.UpdateExpenseRequest
+import com.example.evenly.api.expenses.models.UpdateExpenseResponse
+import com.example.evenly.api.expenses.models.DeleteExpenseRequest
+import com.example.evenly.api.expenses.models.DeleteExpenseResponse
 import com.example.evenly.api.expenses.models.PaymentRequestRequest
 import com.example.evenly.api.expenses.models.PaymentRequestResponse
 import com.example.evenly.api.expenses.models.PaymentConfirmRequest
@@ -22,9 +26,13 @@ import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.PUT
+import retrofit2.http.DELETE
+import retrofit2.http.Path
 import retrofit2.http.Query
 
 interface ExpenseApiService {
+
     @POST("/api/expenses/create/")
     suspend fun createExpense(@Body request: CreateExpenseRequest): Response<CreateExpenseResponse>
 
@@ -41,10 +49,22 @@ interface ExpenseApiService {
     suspend fun getDashboardData(@Body request: GetDashboardDataRequest): Response<GetDashboardDataResponse>
 
     @POST("/api/expenses/expense-notification/")
-    suspend fun addedToExpenseNotification(
-        @Body request: ExpenseNotificationRequest
-    ): Response<Unit>
+    suspend fun addedToExpenseNotification(@Body request: ExpenseNotificationRequest): Response<Unit>
 
+    // ✅ Update & Delete Expense
+    @PUT("/api/expenses/{expenseId}/update/")
+    suspend fun updateExpense(
+        @Path("expenseId") expenseId: String,
+        @Body request: UpdateExpenseRequest
+    ): Response<UpdateExpenseResponse>
+
+    @DELETE("/api/expenses/{expenseId}/delete/")
+    suspend fun deleteExpense(
+        @Path("expenseId") expenseId: String,
+        @Body request: DeleteExpenseRequest
+    ): Response<DeleteExpenseResponse>
+
+    // ✅ Payment-related Endpoints
     @POST("/api/expenses/request-payment/")
     suspend fun requestPaymentConfirmation(@Body request: PaymentRequestRequest): Response<PaymentRequestResponse>
 
@@ -56,4 +76,4 @@ interface ExpenseApiService {
 
     @GET("/api/expenses/pending-payments/")
     suspend fun getPendingPaymentRequests(@Query("lender_id") lenderId: String): Response<PendingPaymentRequestsResponse>
-} 
+}

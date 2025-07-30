@@ -46,6 +46,8 @@ fun MainScreen(
     var selectedGroupId by remember { mutableStateOf<String?>(null) }
     var selectedGroupName by remember { mutableStateOf<String?>(null) }
     var selectedGroupMembers by remember { mutableStateOf<List<GroupMember>?>(null) }
+    var selectedExpense by remember { mutableStateOf<com.example.evenly.api.expenses.models.Expense?>(null) }
+    var showExpenseDetailModal by remember { mutableStateOf(false) }
 
     Box(
         modifier = Modifier
@@ -178,6 +180,11 @@ fun MainScreen(
                                 selectedGroupId = groupId
                                 selectedScreen = Screen.GroupDetail
                             },
+                            onExpenseClick = { expense, groupMembers ->
+                                selectedExpense = expense
+                                selectedGroupMembers = groupMembers
+                                showExpenseDetailModal = true
+                            },
                             modifier = Modifier.padding(innerPadding)
                     )
                 }
@@ -223,6 +230,20 @@ fun MainScreen(
                     }
                 }
             }
+
+        }
+    }
+
+    // Expense Detail Modal
+    if (showExpenseDetailModal && selectedExpense != null) {
+        selectedGroupMembers?.let { groupMembers ->
+            ExpenseDetailModal(
+                expense = selectedExpense!!,
+                groupMembers = groupMembers,
+                onDismiss = { showExpenseDetailModal = false },
+                onExpenseUpdated = { showExpenseDetailModal = false },
+                onExpenseDeleted = { showExpenseDetailModal = false }
+            )
         }
     }
 }

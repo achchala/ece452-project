@@ -136,7 +136,7 @@ class ExpenseOperations:
 
         return enriched_splits
 
-    def get_expense_with_splits(self, expense_id: int) -> Optional[Dict]:
+    def get_expense_with_splits(self, expense_id: str) -> Optional[Dict]:
         """Get an expense with all its splits."""
         expense = self.client._execute_query(
             table_name=self.expenses_table,
@@ -219,7 +219,7 @@ class ExpenseOperations:
         )
 
     def create_split(
-        self, expense_id: int, user_id: str, amount_owed: int
+        self, expense_id: str, user_id: str, amount_owed: int
     ) -> Optional[Dict]:
         """Create a new split for an expense."""
         data = {"expenseid": expense_id, "userid": user_id, "amount_owed": amount_owed}
@@ -244,7 +244,7 @@ class ExpenseOperations:
             "owed": {"total_amount": total_owed, "splits": owed_splits},
         }
 
-    def update_expense(self, expense_id: int, data: Dict[str, Any]) -> Optional[Dict]:
+    def update_expense(self, expense_id: str, data: Dict[str, Any]) -> Optional[Dict]:
         """Update an expense."""
         return self.client._execute_query(
             table_name=self.expenses_table,
@@ -253,7 +253,7 @@ class ExpenseOperations:
             filters={"id": expense_id},
         )
 
-    def delete_expense(self, expense_id: int) -> bool:
+    def delete_expense(self, expense_id: str) -> bool:
         """Delete an expense and all its splits."""
         # First delete all splits for this expense
         self.client._execute_query(

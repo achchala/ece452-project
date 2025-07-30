@@ -138,17 +138,13 @@ class ExpensesView(viewsets.ViewSet):
     @action(detail=True, methods=["put"], url_path="update")
     def update_expense(self, request, pk=None):
         """Update an expense."""
-        try:
-            expense_id = int(pk)
-        except ValueError:
-            return Response(
-                {"error": "Invalid expense ID"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        expense_id = pk  # Keep as string since it's a UUID
 
         title = request.data.get("title")
         total_amount = request.data.get("totalAmount")
         firebase_id = request.data.get("firebaseId")
+        category = request.data.get("category")
+        due_date = request.data.get("dueDate")
 
         if not firebase_id:
             return Response(
@@ -166,7 +162,19 @@ class ExpensesView(viewsets.ViewSet):
 
         # Check if user is the creator of the expense
         expense = supabase.expenses.get_expense_with_splits(expense_id)
-        if not expense or expense.get("created_by") != user.get("id"):
+        if not expense:
+            return Response(
+                {"error": "Expense not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        # Debug: Print the IDs being compared
+        print(
+            f"DEBUG: expense.created_by = {expense.get('created_by')} (type: {type(expense.get('created_by'))})"
+        )
+        print(f"DEBUG: user.id = {user.get('id')} (type: {type(user.get('id'))})")
+
+        if expense.get("created_by") != user.get("id"):
             return Response(
                 {"error": "Unauthorized to update this expense"},
                 status=status.HTTP_403_FORBIDDEN,
@@ -179,6 +187,8 @@ class ExpensesView(viewsets.ViewSet):
             update_data["total_amount"] = total_amount
         if category is not None:
             update_data["category"] = category
+        if due_date is not None:
+            update_data["due_date"] = due_date
 
         if not update_data:
             return Response(
@@ -200,13 +210,7 @@ class ExpensesView(viewsets.ViewSet):
     @action(detail=True, methods=["delete"], url_path="delete")
     def delete_expense(self, request, pk=None):
         """Delete an expense."""
-        try:
-            expense_id = int(pk)
-        except ValueError:
-            return Response(
-                {"error": "Invalid expense ID"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        expense_id = pk  # Keep as string since it's a UUID
 
         firebase_id = request.data.get("firebaseId")
 

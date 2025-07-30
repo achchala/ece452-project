@@ -20,28 +20,29 @@ import androidx.compose.ui.unit.dp
 fun CategorySelector(
     selectedCategory: ExpenseCategory?,
     onCategorySelected: (ExpenseCategory) -> Unit,
+    enabled: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     var expanded by remember { mutableStateOf(false) }
     
     ExposedDropdownMenuBox(
-        expanded = expanded,
-        onExpandedChange = { expanded = it }
+        expanded = if (enabled) expanded else false,
+        onExpandedChange = { if (enabled) expanded = it }
     ) {
         OutlinedTextField(
             value = selectedCategory?.displayName ?: "Select Category",
             onValueChange = { },
             readOnly = true,
             label = { Text("Category") },
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = if (enabled) expanded else false) },
             modifier = Modifier
                 .fillMaxWidth()
                 .menuAnchor()
         )
         
         ExposedDropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false }
+            expanded = if (enabled) expanded else false,
+            onDismissRequest = { if (enabled) expanded = false }
         ) {
             ExpenseCategory.values().forEach { category ->
                 DropdownMenuItem(
@@ -63,8 +64,10 @@ fun CategorySelector(
                         }
                     },
                     onClick = {
-                        onCategorySelected(category)
-                        expanded = false
+                        if (enabled) {
+                            onCategorySelected(category)
+                            expanded = false
+                        }
                     }
                 )
             }

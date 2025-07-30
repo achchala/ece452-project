@@ -1,5 +1,6 @@
 package com.example.evenly
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -32,6 +33,7 @@ fun GroupDetailScreen(
     groupId: String,
     onNavigateBack: () -> Unit,
     onAddExpense: (String, String, List<GroupMember>) -> Unit,
+    onExpenseClick: (Expense, List<GroupMember>) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var group by remember { mutableStateOf<Group?>(null) }
@@ -277,7 +279,10 @@ fun GroupDetailScreen(
                 }
             } else {
                 items(expenses) { expense ->
-                    ExpenseCard(expense = expense)
+                    ExpenseCard(
+                        expense = expense,
+                        onClick = { onExpenseClick(expense, group?.members ?: emptyList()) }
+                    )
                 }
             }
         }
@@ -581,14 +586,19 @@ fun addFriendToGroup(
 }
 
 @Composable
-fun ExpenseCard(expense: Expense, modifier: Modifier = Modifier) {
+fun ExpenseCard(
+    expense: Expense, 
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     // Check if expense is fully paid
     val isFullyPaid = expense.splits.isNotEmpty() && expense.splits.all { split ->
         split.paidConfirmed != null
     }
-    
     Card(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(
             containerColor = if (isFullyPaid) {
                 MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
