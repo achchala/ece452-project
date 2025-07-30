@@ -28,6 +28,7 @@ import com.example.evenly.api.ApiRepository
 import com.example.evenly.api.friends.FriendRequest
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
+import androidx.compose.foundation.clickable
 
 enum class FriendsTab {
     FRIENDS, REQUESTS
@@ -252,41 +253,56 @@ fun FriendsScreen(
                 )
             )
     ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            // Floating Action Button
-            FloatingActionButton(
-                onClick = { showAddFriendDialog = true },
-                containerColor = Color(0xFFFF7024), // Orange background
-                contentColor = Color.White, // White content
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(16.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Send Friend Request"
-                )
-            }
-            
-                        // Main content
-            Column(modifier = Modifier.fillMaxSize()) {
+        // Main content
+        Column(modifier = Modifier.fillMaxSize()) {
             // Tab Row at the very top, outside all padding
-            TabRow(
-                selectedTabIndex = selectedTab.ordinal,
-                modifier = Modifier.fillMaxWidth()
+            // Custom tab selection with boxes
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .padding(top = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Tab(
-                    selected = selectedTab == FriendsTab.FRIENDS,
-                    onClick = { selectedTab = FriendsTab.FRIENDS },
-                    text = { Text("Current Friends") },
-                    modifier = Modifier.weight(1f)
-                )
-                Tab(
-                    selected = selectedTab == FriendsTab.REQUESTS,
-                    onClick = { selectedTab = FriendsTab.REQUESTS },
-                    text = { Text("Friend Requests") },
-                    modifier = Modifier.weight(1f)
-                )
+                // Current Friends Tab
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .background(
+                            color = if (selectedTab == FriendsTab.FRIENDS) Color(0xFF5FB953) else Color.White,
+                            shape = MaterialTheme.shapes.small
+                        )
+                        .clickable { selectedTab = FriendsTab.FRIENDS }
+                        .padding(vertical = 12.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Current Friends",
+                        color = if (selectedTab == FriendsTab.FRIENDS) Color.White else Color.Gray,
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+                
+                // Friend Requests Tab
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .background(
+                            color = if (selectedTab == FriendsTab.REQUESTS) Color(0xFF5FB953) else Color.White,
+                            shape = MaterialTheme.shapes.small
+                        )
+                        .clickable { selectedTab = FriendsTab.REQUESTS }
+                        .padding(vertical = 12.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Friend Requests",
+                        color = if (selectedTab == FriendsTab.REQUESTS) Color.White else Color.Gray,
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
             }
             // Main content with padding
             Box(modifier = Modifier.fillMaxSize()) {
@@ -595,6 +611,21 @@ fun FriendsScreen(
                 }
             }
         }
+        
+        // Floating Action Button - positioned at the bottom right corner
+        FloatingActionButton(
+            onClick = { showAddFriendDialog = true },
+            containerColor = Color(0xFFFF7024), // Orange background
+            contentColor = Color.White, // White content
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = "Send Friend Request"
+            )
+        }
     }
 
     // Send Friend Request Dialog
@@ -607,23 +638,24 @@ fun FriendsScreen(
                     validationError = null
                 }
             },
+            containerColor = Color.White,
             title = {
                 Text("Send Friend Request")
             },
             text = {
                 Column {
-                    Text(
-                        text = "Enter your friend's email address",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
                     OutlinedTextField(
                         value = friendEmail,
                         onValueChange = { friendEmail = it },
-                        label = { Text("Email") },
+                        placeholder = { Text("Enter email address") },
                         singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            unfocusedContainerColor = Color(0xFFF6F6F6),
+                            focusedContainerColor = Color(0xFFF6F6F6),
+                            unfocusedBorderColor = Color(0xFF5BBD6C),
+                            focusedBorderColor = Color(0xFF5BBD6C)
+                        )
                     )
                     if (validationError != null) {
                         Spacer(modifier = Modifier.height(8.dp))
@@ -659,12 +691,16 @@ fun FriendsScreen(
                             }
                         }
                     },
-                    enabled = friendEmail.isNotBlank() && !isAddingFriend && currentUserEmail != null
+                    enabled = friendEmail.isNotBlank() && !isAddingFriend && currentUserEmail != null,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFFF7024),
+                        contentColor = Color.White
+                    )
                 ) {
                     if (isAddingFriend) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(16.dp),
-                            color = MaterialTheme.colorScheme.onPrimary
+                            color = Color.White
                         )
                     } else {
                         Text("Send Request")
@@ -678,7 +714,10 @@ fun FriendsScreen(
                         friendEmail = ""
                         validationError = null
                     },
-                    enabled = !isAddingFriend
+                    enabled = !isAddingFriend,
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = Color(0xFFFF7024)
+                    )
                 ) {
                     Text("Cancel")
                 }
@@ -686,7 +725,7 @@ fun FriendsScreen(
         )
     }
 }
-}
+
 
 
 
@@ -700,7 +739,7 @@ fun FriendCard(
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
+            containerColor = Color.White
         )
     ) {
         Row(
@@ -709,23 +748,34 @@ fun FriendCard(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = Icons.Default.Person,
-                contentDescription = null,
-                modifier = Modifier.size(40.dp),
-                tint = MaterialTheme.colorScheme.primary
-            )
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(
+                        color = Color(0xFFA6DB93),
+                        shape = androidx.compose.foundation.shape.CircleShape
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Person,
+                    contentDescription = null,
+                    modifier = Modifier.size(24.dp),
+                    tint = Color.White
+                )
+            }
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = friendName ?: "Friend",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Medium,
+                    color = Color.Black
                 )
                 Text(
                     text = "Email: ${if (friend.from_user == currentUserEmail) friend.to_user else friend.from_user}",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = Color.Gray
                 )
             }
         }
@@ -741,15 +791,10 @@ fun FriendRequestCard(
     onCancel: (String) -> Unit
 ) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isIncoming) 
-                MaterialTheme.colorScheme.surface 
-            else 
-                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
+            containerColor = Color.White
         )
     ) {
         Row(
@@ -758,19 +803,6 @@ fun FriendRequestCard(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Icon to distinguish request type
-            Icon(
-                imageVector = Icons.Default.Person,
-                contentDescription = if (isIncoming) "Incoming request" else "Outgoing request",
-                modifier = Modifier.size(24.dp),
-                tint = if (isIncoming) 
-                    MaterialTheme.colorScheme.primary 
-                else 
-                    MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            
-            Spacer(modifier = Modifier.width(12.dp))
-            
             // Request details
             Column(
                 modifier = Modifier.weight(1f)
@@ -778,20 +810,34 @@ fun FriendRequestCard(
                 Text(
                     text = if (isIncoming) "Friend request from" else "Friend request to",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = Color.Gray
                 )
                 Text(
                     text = if (isIncoming) request.from_user else request.to_user,
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Medium,
+                    color = Color.Black
                 )
                 if (!isIncoming) {
-                    Text(
-                        text = "Pending",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary,
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.padding(top = 2.dp)
-                    )
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .background(
+                                    color = Color(0xFFFFD700),
+                                    shape = androidx.compose.foundation.shape.CircleShape
+                                )
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Pending",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.Gray
+                        )
+                    }
                 }
             }
             
@@ -827,10 +873,11 @@ fun FriendRequestCard(
                     }
                 }
             } else {
-                OutlinedButton(
+                Button(
                     onClick = { onCancel(request.to_user) },
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFFF7026),
+                        contentColor = Color.White
                     ),
                     modifier = Modifier.height(32.dp)
                 ) {

@@ -79,39 +79,80 @@ fun MainScreen(
                 bottomBar = {
                     // Only show bottom navigation for main screens
                     if (selectedScreen in listOf(Screen.Dashboard, Screen.Friends, Screen.Groups)) {
-                        NavigationBar {
+                        NavigationBar(
+                            containerColor = Color.White
+                        ) {
                             NavigationBarItem(
                                     icon = {
                                         Icon(
                                                 Icons.Default.Home,
-                                                contentDescription = Screen.Dashboard.title
+                                                contentDescription = Screen.Dashboard.title,
+                                                tint = if (selectedScreen == Screen.Dashboard) Color(0xFF5BBD6C) else Color.Gray
                                         )
                                     },
-                                    label = { Text(Screen.Dashboard.title) },
+                                    label = { 
+                                        Text(
+                                            Screen.Dashboard.title,
+                                            color = if (selectedScreen == Screen.Dashboard) Color(0xFF5BBD6C) else Color.Gray
+                                        ) 
+                                    },
                                     selected = selectedScreen == Screen.Dashboard,
-                                    onClick = { selectedScreen = Screen.Dashboard }
+                                    onClick = { selectedScreen = Screen.Dashboard },
+                                    colors = NavigationBarItemDefaults.colors(
+                                        selectedIconColor = Color(0xFF5BBD6C),
+                                        selectedTextColor = Color(0xFF5BBD6C),
+                                        unselectedIconColor = Color.Gray,
+                                        unselectedTextColor = Color.Gray,
+                                        indicatorColor = Color.Transparent
+                                    )
                             )
                             NavigationBarItem(
                                     icon = {
                                         Icon(
                                                 Icons.Default.Person,
-                                                contentDescription = Screen.Friends.title
+                                                contentDescription = Screen.Friends.title,
+                                                tint = if (selectedScreen == Screen.Friends) Color(0xFF5BBD6C) else Color.Gray
                                         )
                                     },
-                                    label = { Text(Screen.Friends.title) },
+                                    label = { 
+                                        Text(
+                                            Screen.Friends.title,
+                                            color = if (selectedScreen == Screen.Friends) Color(0xFF5BBD6C) else Color.Gray
+                                        ) 
+                                    },
                                     selected = selectedScreen == Screen.Friends,
-                                    onClick = { selectedScreen = Screen.Friends }
+                                    onClick = { selectedScreen = Screen.Friends },
+                                    colors = NavigationBarItemDefaults.colors(
+                                        selectedIconColor = Color(0xFF5BBD6C),
+                                        selectedTextColor = Color(0xFF5BBD6C),
+                                        unselectedIconColor = Color.Gray,
+                                        unselectedTextColor = Color.Gray,
+                                        indicatorColor = Color.Transparent
+                                    )
                             )
                             NavigationBarItem(
                                     icon = {
                                         Icon(
                                                 painter = painterResource(id = R.drawable.group_24px),
-                                                contentDescription = Screen.Groups.title
+                                                contentDescription = Screen.Groups.title,
+                                                tint = if (selectedScreen == Screen.Groups) Color(0xFF5BBD6C) else Color.Gray
                                         )
                                     },
-                                    label = { Text(Screen.Groups.title) },
+                                    label = { 
+                                        Text(
+                                            Screen.Groups.title,
+                                            color = if (selectedScreen == Screen.Groups) Color(0xFF5BBD6C) else Color.Gray
+                                        ) 
+                                    },
                                     selected = selectedScreen == Screen.Groups,
-                                    onClick = { selectedScreen = Screen.Groups }
+                                    onClick = { selectedScreen = Screen.Groups },
+                                    colors = NavigationBarItemDefaults.colors(
+                                        selectedIconColor = Color(0xFF5BBD6C),
+                                        selectedTextColor = Color(0xFF5BBD6C),
+                                        unselectedIconColor = Color.Gray,
+                                        unselectedTextColor = Color.Gray,
+                                        indicatorColor = Color.Transparent
+                                    )
                             )
                         }
                     }
