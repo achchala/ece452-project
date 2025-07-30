@@ -11,9 +11,18 @@ import com.example.evenly.api.expenses.models.GetUserGroupExpensesRequest
 import com.example.evenly.api.expenses.models.GetUserGroupExpensesResponse
 import com.example.evenly.api.expenses.models.GetDashboardDataRequest
 import com.example.evenly.api.expenses.models.GetDashboardDataResponse
+import com.example.evenly.api.expenses.models.PaymentRequestRequest
+import com.example.evenly.api.expenses.models.PaymentRequestResponse
+import com.example.evenly.api.expenses.models.PaymentConfirmRequest
+import com.example.evenly.api.expenses.models.PaymentConfirmResponse
+import com.example.evenly.api.expenses.models.PaymentRejectRequest
+import com.example.evenly.api.expenses.models.PaymentRejectResponse
+import com.example.evenly.api.expenses.models.PendingPaymentRequestsResponse
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.Query
 
 interface ExpenseApiService {
     @POST("/api/expenses/create/")
@@ -35,4 +44,16 @@ interface ExpenseApiService {
     suspend fun addedToExpenseNotification(
         @Body request: ExpenseNotificationRequest
     ): Response<Unit>
+
+    @POST("/api/expenses/request-payment/")
+    suspend fun requestPaymentConfirmation(@Body request: PaymentRequestRequest): Response<PaymentRequestResponse>
+
+    @POST("/api/expenses/confirm-payment/")
+    suspend fun confirmPayment(@Body request: PaymentConfirmRequest): Response<PaymentConfirmResponse>
+
+    @POST("/api/expenses/reject-payment/")
+    suspend fun rejectPayment(@Body request: PaymentRejectRequest): Response<PaymentRejectResponse>
+
+    @GET("/api/expenses/pending-payments/")
+    suspend fun getPendingPaymentRequests(@Query("lender_id") lenderId: String): Response<PendingPaymentRequestsResponse>
 } 

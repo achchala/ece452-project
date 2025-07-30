@@ -387,3 +387,84 @@ class ExpensesView(viewsets.ViewSet):
         expenses = supabase.expenses.get_user_group_expenses(user_id, group_id)
 
         return Response(expenses)
+
+    @action(detail=False, methods=["post"], url_path="request-payment")
+    def request_payment_confirmation(self, request):
+        """Request payment confirmation for a split."""
+        split_id = request.data.get("split_id")
+        user_id = request.data.get("user_id")
+        
+        if not all([split_id, user_id]):
+            return Response(
+                {"error": "split_id and user_id are required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        
+        result = supabase.expenses.request_payment_confirmation(split_id, user_id)
+        
+        if result is None:
+            return Response(
+                {"error": "Failed to request payment confirmation or split not found"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        
+        return Response({"message": "Payment confirmation requested", "split": result})
+
+    @action(detail=False, methods=["post"], url_path="confirm-payment")
+    def confirm_payment(self, request):
+        """Confirm payment for a split."""
+        split_id = request.data.get("split_id")
+        lender_id = request.data.get("lender_id")
+        
+        if not all([split_id, lender_id]):
+            return Response(
+                {"error": "split_id and lender_id are required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        
+        result = supabase.expenses.confirm_payment(split_id, lender_id)
+        
+        if result is None:
+            return Response(
+                {"error": "Failed to confirm payment or unauthorized"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        
+        return Response({"message": "Payment confirmed", "split": result})
+
+    @action(detail=False, methods=["post"], url_path="reject-payment")
+    def reject_payment(self, request):
+        """Reject payment for a split."""
+        split_id = request.data.get("split_id")
+        lender_id = request.data.get("lender_id")
+        
+        if not all([split_id, lender_id]):
+            return Response(
+                {"error": "split_id and lender_id are required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        
+        result = supabase.expenses.reject_payment(split_id, lender_id)
+        
+        if result is None:
+            return Response(
+                {"error": "Failed to reject payment or unauthorized"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        
+        return Response({"message": "Payment rejected", "split": result})
+
+    @action(detail=False, methods=["get"], url_path="pending-payments")
+    def get_pending_payment_requests(self, request):
+        """Get pending payment requests for a lender."""
+        lender_id = request.query_params.get("lender_id")
+        
+        if not lender_id:
+            return Response(
+                {"error": "lender_id is required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        
+        pending_requests = supabase.expenses.get_pending_payment_requests(lender_id)
+        
+        return Response({"pending_requests": pending_requests})

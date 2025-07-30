@@ -582,10 +582,19 @@ fun addFriendToGroup(
 
 @Composable
 fun ExpenseCard(expense: Expense, modifier: Modifier = Modifier) {
+    // Check if expense is fully paid
+    val isFullyPaid = expense.splits.isNotEmpty() && expense.splits.all { split ->
+        split.paidConfirmed != null
+    }
+    
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
+            containerColor = if (isFullyPaid) {
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+            } else {
+                MaterialTheme.colorScheme.surfaceVariant
+            }
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
@@ -600,7 +609,11 @@ fun ExpenseCard(expense: Expense, modifier: Modifier = Modifier) {
                 Icon(
                     Icons.Default.Add,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
+                    tint = if (isFullyPaid) {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    } else {
+                        MaterialTheme.colorScheme.primary
+                    },
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(10.dp))
@@ -612,21 +625,43 @@ fun ExpenseCard(expense: Expense, modifier: Modifier = Modifier) {
                         Text(
                             text = expense.title,
                             style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Medium
+                            fontWeight = FontWeight.Medium,
+                            color = if (isFullyPaid) {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            } else {
+                                MaterialTheme.colorScheme.onSurface
+                            }
                         )
                         
-                        // Category chip (only show if category exists and is valid)
-                        expense.category?.let { categoryStr ->
-                            if (categoryStr.isNotBlank() && categoryStr != "null") {
-                                val category = ExpenseCategory.fromString(categoryStr)
-                                CategoryChip(category = category)
+                        // Show paid indicator
+                        if (isFullyPaid) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.Check,
+                                    contentDescription = "Fully Paid",
+                                    tint = Color(0xFF2E7D32), // Green
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Text(
+                                    text = "Paid",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color(0xFF2E7D32), // Green
+                                    fontWeight = FontWeight.Medium
+                                )
                             }
                         }
                     }
                     Text(
                         text = "$${expense.totalAmount / 100.0}",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.primary
+                        color = if (isFullyPaid) {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        } else {
+                            MaterialTheme.colorScheme.primary
+                        }
                     )
                     
                     // Creator information
@@ -645,40 +680,56 @@ fun ExpenseCard(expense: Expense, modifier: Modifier = Modifier) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     
-                    // Due date with color coding
-                    expense.dueDate?.let { dueDate ->
-                        val dueDateLocal = java.time.LocalDate.parse(dueDate)
-                        val today = java.time.LocalDate.now()
-                        val isOverdue = dueDateLocal.isBefore(today)
-                        val isDueToday = dueDateLocal.isEqual(today)
-                        
-                        val dueDateColor = when {
-                            isOverdue -> MaterialTheme.colorScheme.error
-                            isDueToday -> MaterialTheme.colorScheme.error
-                            else -> Color(0xFF2E7D32) // Green
+                    // Due date with color coding (only show if not fully paid)
+                    if (!isFullyPaid) {
+                        expense.dueDate?.let { dueDate ->
+                            val dueDateLocal = java.time.LocalDate.parse(dueDate)
+                            val today = java.time.LocalDate.now()
+                            val isOverdue = dueDateLocal.isBefore(today)
+                            val isDueToday = dueDateLocal.isEqual(today)
+                            
+                            val dueDateColor = when {
+                                isOverdue -> MaterialTheme.colorScheme.error
+                                isDueToday -> MaterialTheme.colorScheme.error
+                                else -> Color(0xFF2E7D32) // Green
+                            }
+                            
+                            val dueDateText = when {
+                                isOverdue -> "Overdue: $dueDate"
+                                isDueToday -> "Due today: $dueDate"
+                                else -> "Due: $dueDate"
+                            }
+                            
+                            Text(
+                                text = dueDateText,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = dueDateColor,
+                                fontWeight = FontWeight.Medium
+                            )
                         }
-                        
-                        val dueDateText = when {
-                            isOverdue -> "Overdue: $dueDate"
-                            isDueToday -> "Due today: $dueDate"
-                            else -> "Due: $dueDate"
-                        }
-                        
-                        Text(
-                            text = dueDateText,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = dueDateColor,
-                            fontWeight = FontWeight.Medium
-                        )
                     }
                 }
             }
+            
+            // Show payment status summary
             if (expense.splits.isNotEmpty()) {
-                Text(
-                    text = "Split between ${expense.splits.size} people",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                val paidCount = expense.splits.count { it.paidConfirmed != null }
+                val totalCount = expense.splits.size
+                
+                if (isFullyPaid) {
+                    Text(
+                        text = "✅ All ${totalCount} people have paid back",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color(0xFF2E7D32), // Green
+                        fontWeight = FontWeight.Medium
+                    )
+                } else {
+                    Text(
+                        text = "Split between ${totalCount} people (${paidCount}/${totalCount} paid)",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
     }
