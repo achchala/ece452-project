@@ -1,14 +1,18 @@
 package com.example.evenly
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.evenly.ui.theme.BottomBackgroundColor
+import com.example.evenly.ui.theme.TopBackgroundColor
 import com.example.evenly.api.ApiRepository
 import com.example.evenly.api.dashboard.models.DashboardResponse
 import com.example.evenly.api.dashboard.models.Expense
@@ -82,15 +86,20 @@ fun DashboardScreen(
         isLoading = false
     }
 
-    Scaffold(
-            modifier = modifier.fillMaxSize()
-    ) { paddingValues ->
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(
+                brush = Brush.verticalGradient(
+                    colors = listOf(TopBackgroundColor, BottomBackgroundColor)
+                )
+            )
+    ) {
         Column(
                 modifier =
                         Modifier.fillMaxSize()
                                 .padding(horizontal = 16.dp)
                                 .padding(top = 8.dp)
-                                .padding(paddingValues)
         ) {
             // Personalized header
             if (userName != null) {
@@ -148,6 +157,7 @@ fun DashboardScreen(
         }
     }
 }
+
 
 @Composable
 fun TotalSummaryCard(totalLent: Long, totalOwed: Long, modifier: Modifier = Modifier) {

@@ -12,6 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -195,8 +196,8 @@ fun GroupDetailScreen(
                                     onAddExpense(groupData.id, groupData.name, groupData.members)
                                 }
                             },
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary,
+                            containerColor = Color(0xFFFF7024), // Orange background
+                            contentColor = Color.White, // White content
                             modifier = Modifier.size(56.dp)
                     ) {
                         Icon(
@@ -208,8 +209,8 @@ fun GroupDetailScreen(
                     // Add Friend FAB
                     FloatingActionButton(
                             onClick = { showAddUserDialog = true },
-                            containerColor = MaterialTheme.colorScheme.secondary,
-                            contentColor = MaterialTheme.colorScheme.onSecondary,
+                            containerColor = Color(0xFFFF7024), // Orange background
+                            contentColor = Color.White, // White content
                             modifier = Modifier.size(56.dp)
                     ) {
                         Icon(

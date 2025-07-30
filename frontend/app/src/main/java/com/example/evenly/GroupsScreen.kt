@@ -1,5 +1,6 @@
 package com.example.evenly
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -11,8 +12,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.evenly.ui.theme.BottomBackgroundColor
+import com.example.evenly.ui.theme.TopBackgroundColor
 import com.example.evenly.api.ApiRepository
 import com.example.evenly.api.group.models.Group
 import com.google.firebase.auth.FirebaseAuth
@@ -60,18 +65,20 @@ fun GroupsScreen(
         isLoading = false
     }
 
-    Scaffold(
-            modifier = modifier.fillMaxSize(),
-            floatingActionButton = {
-                FloatingActionButton(
-                        onClick = onCreateGroup,
-                        containerColor = MaterialTheme.colorScheme.primary
-                ) { Icon(Icons.Default.Add, contentDescription = "Create Group") }
-            }
-    ) { innerPadding ->
-        Column(
-                modifier = Modifier.fillMaxSize().padding(innerPadding).padding(horizontal = 16.dp)
-        ) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(
+                brush = Brush.verticalGradient(
+                    colors = listOf(TopBackgroundColor, BottomBackgroundColor)
+                )
+            )
+    ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            // Main content
+            Column(
+                modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)
+            ) {
             if (isLoading) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
@@ -131,9 +138,23 @@ fun GroupsScreen(
                     }
                 }
             }
+            }
+            
+            // Floating Action Button - positioned after main content to ensure it's on top
+            FloatingActionButton(
+                onClick = onCreateGroup,
+                containerColor = Color(0xFFFF7024), // Orange background
+                contentColor = Color.White, // White content
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(16.dp)
+            ) { 
+                Icon(Icons.Default.Add, contentDescription = "Create Group") 
+            }
         }
     }
 }
+
 
 @Composable
 fun GroupCard(group: Group, onClick: () -> Unit, modifier: Modifier = Modifier) {

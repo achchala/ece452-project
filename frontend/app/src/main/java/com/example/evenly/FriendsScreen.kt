@@ -2,6 +2,7 @@ package com.example.evenly
 
 import android.util.Log
 import android.util.Patterns
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -14,11 +15,15 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
+import com.example.evenly.ui.theme.BottomBackgroundColor
+import com.example.evenly.ui.theme.TopBackgroundColor
 import com.example.evenly.api.ApiRepository
 import com.example.evenly.api.friends.FriendRequest
 import com.google.firebase.auth.FirebaseAuth
@@ -238,22 +243,33 @@ fun FriendsScreen(
         }
     }
 
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        floatingActionButton = {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(
+                brush = Brush.verticalGradient(
+                    colors = listOf(TopBackgroundColor, BottomBackgroundColor)
+                )
+            )
+    ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            // Floating Action Button
             FloatingActionButton(
                 onClick = { showAddFriendDialog = true },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
+                containerColor = Color(0xFFFF7024), // Orange background
+                contentColor = Color.White, // White content
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(16.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
                     contentDescription = "Send Friend Request"
                 )
             }
-        }
-    ) { innerPadding ->
-        Column(modifier = Modifier.fillMaxSize()) {
+            
+                        // Main content
+            Column(modifier = Modifier.fillMaxSize()) {
             // Tab Row at the very top, outside all padding
             TabRow(
                 selectedTabIndex = selectedTab.ordinal,
@@ -273,7 +289,7 @@ fun FriendsScreen(
                 )
             }
             // Main content with padding
-            Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+            Box(modifier = Modifier.fillMaxSize()) {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -669,6 +685,7 @@ fun FriendsScreen(
             }
         )
     }
+}
 }
 
 
