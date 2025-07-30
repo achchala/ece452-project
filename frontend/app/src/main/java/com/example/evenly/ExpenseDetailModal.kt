@@ -197,8 +197,13 @@ fun ExpenseDetailModal(
                                     fontWeight = FontWeight.Medium
                                 )
                                 if (!isCreator) {
+                                    // Try to find creator name from group members using createdBy ID
+                                    val creatorName = expense.creator?.name ?: 
+                                        groupMembers.find { it.userId == expense.createdBy }?.user?.name ?: 
+                                        "Unknown"
+                                    
                                     Text(
-                                        text = "Created by: ${expense.creator?.name ?: "Unknown"}",
+                                        text = "Created by: $creatorName",
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -356,8 +361,21 @@ fun ExpenseDetailModal(
                                 )
                             } else {
                                 expense.splits.forEach { split ->
-                                    // Find the user name from group members
-                                    val userName = groupMembers.find { it.userId == split.userId }?.user?.name ?: "Unknown User"
+                                    // Debug logging
+                                    println("Split userId: ${split.userId}")
+                                    println("Group members: ${groupMembers.map { "${it.userId} -> ${it.user?.name}" }}")
+                                    
+                                    // Find the user name from group members using userId
+                                    val matchingMember = groupMembers.find { it.userId == split.userId }
+                                    val userName = if (matchingMember != null) {
+                                        matchingMember.user?.name ?: "Unknown User"
+                                    } else {
+                                        // Try to find by user email if available
+                                        split.debtor?.name ?: "Unknown User"
+                                    }
+                                    
+                                    println("Matching member: $matchingMember")
+                                    println("Final userName: $userName")
                                     
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),

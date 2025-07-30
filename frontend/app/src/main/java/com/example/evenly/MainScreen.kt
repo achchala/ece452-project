@@ -209,7 +209,8 @@ fun MainScreen(
                                     selectedGroupMembers = groupMembers
                                     showExpenseDetailModal = true
                                 },
-                                modifier = Modifier.padding(innerPadding)
+                                modifier = Modifier.padding(innerPadding),
+                                key = selectedExpense // Force refresh when selectedExpense changes
                         )
                     }
                 }
@@ -241,8 +242,16 @@ fun MainScreen(
                 expense = selectedExpense!!,
                 groupMembers = groupMembers,
                 onDismiss = { showExpenseDetailModal = false },
-                onExpenseUpdated = { showExpenseDetailModal = false },
-                onExpenseDeleted = { showExpenseDetailModal = false }
+                onExpenseUpdated = { 
+                    showExpenseDetailModal = false
+                    // Force refresh of the group detail screen by updating the selectedExpense
+                    selectedExpense = null
+                },
+                onExpenseDeleted = { 
+                    showExpenseDetailModal = false
+                    // Force refresh of the group detail screen by updating the selectedExpense
+                    selectedExpense = null
+                }
             )
         }
     }

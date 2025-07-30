@@ -23,6 +23,8 @@ import com.example.evenly.api.expenses.models.Expense
 import com.example.evenly.api.friends.FriendRequest
 import com.example.evenly.api.group.models.Group
 import com.example.evenly.api.group.models.GroupMember
+import com.example.evenly.CategoryChip
+import com.example.evenly.ExpenseCategory
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -34,7 +36,8 @@ fun GroupDetailScreen(
     onNavigateBack: () -> Unit,
     onAddExpense: (String, String, List<GroupMember>) -> Unit,
     onExpenseClick: (Expense, List<GroupMember>) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    key: Any? = null
 ) {
     var group by remember { mutableStateOf<Group?>(null) }
     var showAddUserDialog by remember { mutableStateOf(false) }
@@ -642,6 +645,14 @@ fun ExpenseCard(
                                 MaterialTheme.colorScheme.onSurface
                             }
                         )
+                        
+                        // Category chip (only show if category exists and is valid)
+                        expense.category?.let { categoryStr ->
+                            if (categoryStr.isNotBlank() && categoryStr != "null") {
+                                val category = ExpenseCategory.fromString(categoryStr)
+                                CategoryChip(category = category)
+                            }
+                        }
                         
                         // Show paid indicator
                         if (isFullyPaid) {
